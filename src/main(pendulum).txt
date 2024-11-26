@@ -7,7 +7,7 @@
 
 int main()
 {
-    Solver solver;
+    PendulumSolver solver;
 
     auto window = sf::RenderWindow({ conf::window_size.x, conf::window_size.y }, "SFML Verlet Integration");
     window.setFramerateLimit(conf::max_framerate);
@@ -17,10 +17,10 @@ int main()
 
     sf::Text energy;
     energy.setFont(consolas);
-    sf::Text deltatime;
-    deltatime.setFont(consolas);
-    deltatime.setPosition(sf::Vector2f(0, 100));
 
+    sf::Text angle;
+    angle.setFont(consolas);
+    angle.setPosition(sf::Vector2f(0, conf::window_size.y - 50));
 
     sf::SoundBuffer collision;
     if (!collision.loadFromFile("C:\\Users\\Jandy\\source\\SFML-Physics\\SFML-Physics\\files\\collision.wav"))
@@ -29,7 +29,6 @@ int main()
     }
     sf::Sound collisionsound;
     collisionsound.setBuffer(collision);
-    sf::Clock clock;
 
     while (window.isOpen())
     {
@@ -43,25 +42,23 @@ int main()
             }
         }
 
-        solver.update(conf::dt);
+        solver.update(conf::dt, window);
 
-        for (int i = 0; i < solver.count; i++)
+
+        if (solver.pendulum.collide == true)
         {
-            if (solver.ball[i].collide == true)
-            {
-               // collisionsound.play();
-            }
-       }
+            collisionsound.play();
+        }
 
-        energy.setString(std::to_string(solver.energy));
-        float currenttime = clock.restart().asSeconds();
-        deltatime.setString(std::to_string(1.0f/currenttime));
-        window.draw(deltatime);
+        energy.setString(std::to_string(solver.pendulum.Energy));
+        angle.setString(std::to_string(std::abs(fmod(solver.pendulum.angle ,(3.14159 * 2)))));
+
         window.draw(energy);
+        window.draw(angle);
+
         solver.render(window);
+
         window.display();
-        solver.energy = 0;
-        currenttime = 0;
 
     }
 }
