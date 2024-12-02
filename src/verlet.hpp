@@ -18,8 +18,8 @@ struct VerletBall
 	sf::Color color;
 
 	VerletBall()
-		: position((conf::window_sizef.x) / 2, 0.0f),
-		position_last((conf::window_sizef.x) / 2, 0.0f),
+		: position((conf::constraints.x) / 2, 0.0f),
+		position_last((conf::constraints.x) / 2, 0.0f),
 		displacement(position - position_last),
 		acceleration(0, 0),
 		center(position.x + radius, position.y + radius),
@@ -31,11 +31,11 @@ struct VerletBall
 
 	void collisioncheck(sf::Vector2<double> position_next, sf::Vector2<double> displacement)
 	{
-		if (position_next.x > conf::window_sizef.x - 2 * radius || position_next.x < 0)
+		if (position_next.x > conf::constraints.x - 2 * radius || position_next.x < 0)
 		{
-			if (position_next.x > conf::window_sizef.x - 2 * radius)
+			if (position_next.x > conf::constraints.x - 2 * radius)
 			{
-				position.x = conf::window_sizef.x - 2 * radius;
+				position.x = conf::constraints.x - 2 * radius;
 			}
 			else
 			{
@@ -45,11 +45,11 @@ struct VerletBall
 			collide = true;
 		}
 
-		if (position_next.y > conf::window_sizef.y - 2 * radius || position_next.y < 0)
+		if (position_next.y > conf::constraints.y - 2 * radius || position_next.y < 0)
 		{
-			if (position_next.y > conf::window_sizef.y - 2 * radius)
+			if (position_next.y > conf::constraints.y - 2 * radius)
 			{
-				position.y = conf::window_sizef.y - 2 * radius;
+				position.y = conf::constraints.y - 2 * radius;
 			}
 			else
 			{
@@ -74,18 +74,6 @@ struct VerletBall
 
 		acceleration = sf::Vector2<double>(0.0f, gravity);
 	}
-
-	void render(sf::RenderWindow& window, sf::Texture& texture)
-	{
-		sf::Sprite sprite;
-		sprite.setTexture(texture);
-		sf::Vector2f positionset = sf::Vector2f(static_cast<float>(position.x), static_cast<float>(position.y));
-		sprite.setPosition(positionset);
-		sprite.setColor(sf::Color(color));
-		float scale = radius / 50.0f;
-		sprite.setScale(sf::Vector2f(scale, scale));
-		window.draw(sprite);
-	}
 };
 
 class Solver
@@ -94,7 +82,7 @@ private:
 	static const int rowsize = 10;
 	static constexpr float radius = 30;
 	static constexpr double restitution = 1;
-	static constexpr double startingvel = 400000.0f;
+	static constexpr double startingvel = 40000.0f;
 	static const int mod = 3;
 
 	void collisionwitheachother(int i, float dt)
@@ -124,11 +112,11 @@ private:
 			}
 		}
 
-		if (ball[i].position.x > conf::window_sizef.x - 2 * ball[i].radius || ball[i].position.x < 0)
+		if (ball[i].position.x > conf::constraints.x - 2 * ball[i].radius || ball[i].position.x < 0)
 		{
-			if (ball[i].position.x > conf::window_sizef.x - 2 * ball[i].radius)
+			if (ball[i].position.x > conf::constraints.x - 2 * ball[i].radius)
 			{
-				ball[i].position.x = conf::window_sizef.x - 2 * ball[i].radius;
+				ball[i].position.x = conf::constraints.x - 2 * ball[i].radius;
 			}
 			else
 			{
@@ -138,11 +126,11 @@ private:
 			ball[i].collide = true;
 		}
 
-		if (ball[i].position.y > conf::window_sizef.y - 2 * ball[i].radius || ball[i].position.y < 0)
+		if (ball[i].position.y > conf::constraints.y - 2 * ball[i].radius || ball[i].position.y < 0)
 		{
-			if (ball[i].position.y > conf::window_sizef.y - 2 * ball[i].radius)
+			if (ball[i].position.y > conf::constraints.y - 2 * ball[i].radius)
 			{
-				ball[i].position.y = conf::window_sizef.y - 2 * ball[i].radius;
+				ball[i].position.y = conf::constraints.y - 2 * ball[i].radius;
 				ball[i].acceleration = sf::Vector2<double>(0.0f, 0.0f);
 			}
 			else
@@ -156,10 +144,9 @@ private:
 	}
 public:
 	static const int count = 30;
-	static const int substep = 10;
+	static const int substep = 1;
 	double energy = 0;
 	VerletBall* ball;
-	sf::Texture texture;
 
 	Solver() {
 		ball = new VerletBall[count];
@@ -171,9 +158,6 @@ public:
 			ball[i].acceleration = sf::Vector2<double>(startingvel, 0);
 		}
 		ball[0].color = sf::Color::Yellow;
-		if (!texture.loadFromFile("C:\\Users\\Jandy\\source\\SFML-Physics\\SFML-Physics\\files\\circle.png"))
-		{
-		}
 	}
 
 	void update(float dt)
@@ -191,11 +175,30 @@ public:
 		}
 	}
 
-	void render(sf::RenderWindow& window)
+	void toVertexArray(sf::VertexArray& vertices, const VerletBall *balls)
 	{
+		vertices.clear();
+		sf::Vector2u textureSize = { 100, 100 };
 		for (int i = 0; i < count; i++)
 		{
-		ball[i].render(window, texture);
+			const VerletBall& ball = balls[i];
+			float positionx = ball.position.x;
+			float positiony = ball.position.y;
+			float radius = ball.radius + ball.radius;
+			sf::Vector2f TopLeft(positionx, positiony );
+			sf::Vector2f TopRight(positionx + radius, positiony);
+			sf::Vector2f BottomLeft(positionx, positiony + radius);
+			sf::Vector2f BottomRight(positionx + radius, positiony + radius);
+			
+			sf::Vector2f texTopLeft(0, 0);
+			sf::Vector2f texTopRight(textureSize.x, 0);
+			sf::Vector2f texBottomRight(textureSize.x, textureSize.y);
+			sf::Vector2f texBottomLeft(0, textureSize.y);
+			
+			vertices.append(sf::Vertex(TopLeft, ball.color, texTopLeft));
+			vertices.append(sf::Vertex(TopRight, ball.color, texTopRight));
+			vertices.append(sf::Vertex(BottomRight, ball.color, texBottomRight));
+			vertices.append(sf::Vertex(BottomLeft, ball.color, texBottomLeft));
 		}
 	}
 };
