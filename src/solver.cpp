@@ -16,6 +16,11 @@ private:
 		for (int j = i+1; j < count; j++)
 		{
 			VerletBall& OtherBall = ball[j];
+			if (std::abs(currentball.position.x - OtherBall.position.x) > (currentball.radius + OtherBall.radius) ||
+				std::abs(currentball.position.y - OtherBall.position.y) > (currentball.radius + OtherBall.radius))
+			{
+				continue;
+			}
 			const sf::Vector2<double> distVect = currentball.center - OtherBall.center;
 			const float distance = std::sqrt(distVect.x * distVect.x + distVect.y * distVect.y);
 			const float nx = distVect.x / distance;
@@ -67,8 +72,8 @@ private:
 		}
 	}
 public:
-	int count = 1000;
-	static constexpr int substep = 2;
+	int count = 5000;
+	static constexpr int substep = 1;
 	double energy = 0;
 	std::vector<VerletBall> ball;
 
