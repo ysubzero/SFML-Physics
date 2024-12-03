@@ -72,8 +72,8 @@ private:
 		}
 	}
 public:
-	int count = 5000;
-	static constexpr int substep = 1;
+	int count = 1000;
+	static constexpr int substep = 4;
 	double energy = 0;
 	std::vector<VerletBall> ball;
 
@@ -127,7 +127,7 @@ public:
 		#pragma omp parallel for
 		for (int i = 0; i < count; i++)
 		{
-			float energymodifier = 25 / substep;
+			float energymodifier = 6 / substep;
 
 			VerletBall& currentball = ball[i];
 
