@@ -16,7 +16,6 @@ struct VerletBall
 	sf::Vector2<double> center;
 	double Energy;
 	float radius;
-	bool collide;
 	sf::Color color;
 
 	VerletBall()
@@ -27,13 +26,11 @@ struct VerletBall
 		center(position.x + radius, position.y + radius),
 		radius(10.0f),
 		Energy(0.0),
-		collide(false),
 		color(sf::Color::White)
 	{}
 
 	void update(double dt, double gravity)
 	{
-		collide = false;
 		displacement = position - position_last;
 		position_next = position + displacement + acceleration * dt * dt;
 

@@ -1,44 +1,41 @@
 #include <verlet.hpp>
-#include <collisiongrid.hpp>
+//#include <collisiongrid.hpp>
 #include <random>
 
 class Solver
 {
 private:
-	static constexpr int rowsize = 30;
+	static constexpr int rowsize = 90;
 	static constexpr float radius = 3;
 	static constexpr double restitution = 1;
-	static constexpr double startingvel = 100000.0f;
+	static constexpr double startingvel = 1000.0f;
 	static constexpr int mod = 4;
 
-	void collisionwitheachother(VerletBall& currentball, float dt)
+	void collisionwitheachother(int i, VerletBall& currentball, float dt)
 	{
-		for (int j = 0; j < count; j++)
+		for (int j = i+1; j < count; j++)
 		{
-			const sf::Vector2<double> distVect = currentball.center - ball[j].center;
+			VerletBall& OtherBall = ball[j];
+			const sf::Vector2<double> distVect = currentball.center - OtherBall.center;
 			const float distance = std::sqrt(distVect.x * distVect.x + distVect.y * distVect.y);
 			const float nx = distVect.x / distance;
 			const float ny = distVect.y / distance;
 
-			if ((distance) < (currentball.radius + ball[j].radius))
+			if ((distance) < (currentball.radius + OtherBall.radius))
 			{
-				if (&currentball == &ball[j])
-				{
-					continue;
-				}
-				currentball.position.x += nx * (currentball.radius + ball[j].radius - (distance)) * 0.5;
-				ball[j].position.x -= nx * (currentball.radius + ball[j].radius - (distance)) * 0.5;
+				currentball.position.x += nx * (currentball.radius + OtherBall.radius - (distance)) * 0.5;
+				OtherBall.position.x -= nx * (currentball.radius + OtherBall.radius - (distance)) * 0.5;
 
-				currentball.position.y += ny * (currentball.radius + ball[j].radius - (distance)) * 0.5;
-				ball[j].position.y -= ny * (currentball.radius + ball[j].radius - (distance)) * 0.5;
+				currentball.position.y += ny * (currentball.radius + OtherBall.radius - (distance)) * 0.5;
+				OtherBall.position.y -= ny * (currentball.radius + OtherBall.radius - (distance)) * 0.5;
 
 				const sf::Vector2<double> ivel = currentball.displacement;
-				const sf::Vector2<double> jvel = ball[j].displacement;
+				const sf::Vector2<double> jvel = OtherBall.displacement;
+				const float dotProduct = Math::dot((ivel - jvel), distVect);
 				currentball.displacement = ivel - distVect * (Math::dot((ivel - jvel), distVect) / (distVect.x * distVect.x + distVect.y * distVect.y)) * restitution;
-				ball[j].displacement = jvel - distVect * (Math::dot((jvel - ivel), distVect) / (distVect.x * distVect.x + distVect.y * distVect.y)) * restitution;
-				ball[j].position_last = ball[j].position - ball[j].displacement;
+				OtherBall.displacement = jvel - distVect * (Math::dot((jvel - ivel), distVect) / (distVect.x * distVect.x + distVect.y * distVect.y)) * restitution;
+				OtherBall.position_last = OtherBall.position - OtherBall.displacement;
 				currentball.position_last = currentball.position - currentball.displacement;
-				currentball.collide = true;
 			}
 		}
 
@@ -53,7 +50,6 @@ private:
 				currentball.position.x = 0;
 			}
 			currentball.position_last.x = currentball.position.x + (currentball.displacement.x * restitution);
-			currentball.collide = true;
 		}
 
 		if (currentball.position.y > conf::constraints.y - 2 * currentball.radius || currentball.position.y < 0)
@@ -67,14 +63,12 @@ private:
 			{
 				currentball.position.y = 0;
 			}
-
 			currentball.position_last.y = currentball.position.y + (currentball.displacement.y * restitution);
-			currentball.collide = true;
 		}
 	}
 public:
 	int count = 1000;
-	static constexpr int substep = 1;
+	static constexpr int substep = 2;
 	double energy = 0;
 	std::vector<VerletBall> ball;
 
@@ -110,7 +104,7 @@ public:
 		count++;
 	}
 	
-	void update(float dt)
+	void update(float dt, sf::VertexArray& vertices)
 	{
 		for (int t = 0; t < substep; t++)
 		{
@@ -118,45 +112,58 @@ public:
 			{
 				VerletBall& currentball = ball[i];
 				currentball.update(dt / substep, Math::gravity);
-				collisionwitheachother(currentball, dt / substep);
-				double velocity = (((currentball.displacement.x * currentball.displacement.x) + (currentball.displacement.y * currentball.displacement.y)));
-				currentball.Energy = ((velocity) / ((2.0)));
-				int scaledEnergy = static_cast<int>((currentball.Energy / 25) * 255);
-				scaledEnergy = std::min(255, std::max(0, scaledEnergy));
-				int red = scaledEnergy;
-				int greenquadratic = ((scaledEnergy - 128) * (scaledEnergy - 128) * -0.01556) + 255;
-				int green = std::min(255, std::max(0, greenquadratic));
-				int blue = std::max(0, 255 - scaledEnergy * 2);
-				currentball.color = (sf::Color(red, green, blue));
-				energy += currentball.Energy;
 			}
+			for (int i = 0; i < count; i++)
+			{
+				VerletBall& currentball = ball[i];
+				collisionwitheachother(i, currentball, dt / substep);
+			}
+		}
+		#pragma omp parallel for
+		for (int i = 0; i < count; i++)
+		{
+			float energymodifier = 25 / substep;
+
+			VerletBall& currentball = ball[i];
+
+			double velocity = (((currentball.displacement.x * currentball.displacement.x) + (currentball.displacement.y * currentball.displacement.y)));
+			currentball.Energy = ((velocity) / ((2.0)));
+
+			int scaledEnergy = static_cast<int>((currentball.Energy / (energymodifier)) * 255);
+			scaledEnergy = std::min(255, std::max(0, scaledEnergy));
+
+			int red = scaledEnergy;
+			int greenquadratic = ((scaledEnergy - 128) * (scaledEnergy - 128) * -0.01556) + 255;
+			int green = std::min(255, std::max(0, greenquadratic));
+			int blue = std::max(0, 255 - scaledEnergy * 2);
+
+			currentball.color = (sf::Color(red, green, blue));
+
+			energy += currentball.Energy;
+
+			toVertexArray(vertices, currentball);
 		}
 	}
 
-	void toVertexArray(sf::VertexArray& vertices, std::vector<VerletBall>& balls)
+	void toVertexArray(sf::VertexArray& vertices, const VerletBall& ball)
 	{
-		vertices.clear();
 		sf::Vector2u textureSize = { 100, 100 };
-		for (int i = 0; i < count; i++)
-		{
-			const VerletBall& ball = balls[i];
-			float positionx = ball.position.x;
-			float positiony = ball.position.y;
-			float radius = ball.radius + ball.radius;
-			sf::Vector2f TopLeft(positionx, positiony);
-			sf::Vector2f TopRight(positionx + radius, positiony);
-			sf::Vector2f BottomLeft(positionx, positiony + radius);
-			sf::Vector2f BottomRight(positionx + radius, positiony + radius);
+		float positionx = ball.position.x;
+		float positiony = ball.position.y;
+		float radius = ball.radius + ball.radius;
+		sf::Vector2f TopLeft(positionx, positiony);
+		sf::Vector2f TopRight(positionx + radius, positiony);
+		sf::Vector2f BottomLeft(positionx, positiony + radius);
+		sf::Vector2f BottomRight(positionx + radius, positiony + radius);
 
-			sf::Vector2f texTopLeft(0, 0);
-			sf::Vector2f texTopRight(textureSize.x, 0);
-			sf::Vector2f texBottomRight(textureSize.x, textureSize.y);
-			sf::Vector2f texBottomLeft(0, textureSize.y);
+		sf::Vector2f texTopLeft(0, 0);
+		sf::Vector2f texTopRight(textureSize.x, 0);
+		sf::Vector2f texBottomRight(textureSize.x, textureSize.y);
+		sf::Vector2f texBottomLeft(0, textureSize.y);
 
-			vertices.append(sf::Vertex(TopLeft, ball.color, texTopLeft));
-			vertices.append(sf::Vertex(TopRight, ball.color, texTopRight));
-			vertices.append(sf::Vertex(BottomRight, ball.color, texBottomRight));
-			vertices.append(sf::Vertex(BottomLeft, ball.color, texBottomLeft));
-		}
+		vertices.append(sf::Vertex(TopLeft, ball.color, texTopLeft));
+		vertices.append(sf::Vertex(TopRight, ball.color, texTopRight));
+		vertices.append(sf::Vertex(BottomRight, ball.color, texBottomRight));
+		vertices.append(sf::Vertex(BottomLeft, ball.color, texBottomLeft));
 	}
 };

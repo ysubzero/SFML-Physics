@@ -97,6 +97,7 @@ int main()
 
     while (window.isOpen())
     {
+        vertices.clear();
         window.clear(sf::Color(128,128,128));
         window.draw(blackBackground);
 
@@ -109,8 +110,7 @@ int main()
             }
         }
 
-        solver.update(conf::dt);
-        solver.toVertexArray(vertices, solver.ball);
+        solver.update(conf::dt, vertices);
         window.draw(vertices, states);
 
        // for (int i = 0; i < solver.count; i++)
