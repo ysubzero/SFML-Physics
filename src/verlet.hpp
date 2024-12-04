@@ -14,7 +14,6 @@ struct VerletBall
 	sf::Vector2<double> position_next;
 	sf::Vector2<double> displacement;
 	sf::Vector2<double> acceleration;
-	sf::Vector2<double> center;
 	double Energy;
 	float radius;
 	sf::Color color;
@@ -26,7 +25,6 @@ struct VerletBall
 		position_last((conf::constraints.x) / 2, 0.0f),
 		displacement(position - position_last),
 		acceleration(0, 0),
-		center(position.x + radius, position.y + radius),
 		radius(10.0f),
 		Energy(0.0),
 		color(sf::Color::White),
@@ -47,8 +45,6 @@ struct VerletBall
 
 		position_last = position;
 		position = position_next;
-		center = sf::Vector2<double>(position.x + radius, position.y + radius);
-
 		acceleration = sf::Vector2<double>(0.0f, gravity);
 		updateGrid();
 	}

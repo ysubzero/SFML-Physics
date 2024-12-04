@@ -2,14 +2,15 @@
 //#include <collisiongrid.hpp>
 #include "thread_pool.hpp"
 #include <random>
+#include <algorithm>
 
 class Solver
 {
 private:
-	static constexpr int rowsize = 180;
+	static constexpr int rowsize = 200;
 	static constexpr float radius = 2;
 	static constexpr double restitution = 1;
-	static constexpr double startingvel = 1000.0f;
+	static constexpr double startingvel = 100000.0f;
 	static constexpr int mod = 3;
 
 	void collisionwitheachother(int i, VerletBall& currentball, float dt)
@@ -26,7 +27,7 @@ private:
 				{
 					continue;
 				}
-				const sf::Vector2<double> distVect = currentball.center - OtherBall.center;
+				const sf::Vector2<double> distVect = currentball.position - OtherBall.position;
 				const double distsquared = distVect.x * distVect.x + distVect.y * distVect.y;
 				const double distance = std::sqrt(distsquared);
 				const double nx = distVect.x / distance;
@@ -53,35 +54,21 @@ private:
 			}
 		}
 
-		if (currentball.position.x > conf::constraints.x - 2 * currentball.radius || currentball.position.x < 0)
+		if (currentball.position.x > conf::constraints.x - currentball.radius || currentball.position.x < currentball.radius)
 		{
-			if (currentball.position.x > conf::constraints.x - 2 * currentball.radius)
-			{
-				currentball.position.x = conf::constraints.x - 2 * currentball.radius;
-			}
-			else
-			{
-				currentball.position.x = 0;
-			}
+			currentball.position.x = std::clamp(currentball.position.x, static_cast<double>(currentball.radius), static_cast<double>(conf::constraints.x - currentball.radius));
 			currentball.position_last.x = currentball.position.x + (currentball.displacement.x * restitution);
 		}
 
-		if (currentball.position.y > conf::constraints.y - 2 * currentball.radius || currentball.position.y < 0)
+		if (currentball.position.y > conf::constraints.y - currentball.radius || currentball.position.y < currentball.radius)
 		{
-			if (currentball.position.y > conf::constraints.y - 2 * currentball.radius)
-			{
-				currentball.position.y = conf::constraints.y - 2 * currentball.radius;
-				currentball.acceleration = sf::Vector2<double>(0.0f, 0.0f);
-			}
-			else
-			{
-				currentball.position.y = 0;
-			}
+			currentball.position.y = std::clamp(currentball.position.y, static_cast<double>(currentball.radius), static_cast<double>(conf::constraints.y - currentball.radius));
 			currentball.position_last.y = currentball.position.y + (currentball.displacement.y * restitution);
 		}
 	}
+
 public:
-	int count = 10000;
+	int count = 20000;
 	static constexpr int substep = 1;
 	double energy = 0;
 	std::vector<VerletBall> ball;
@@ -127,6 +114,11 @@ public:
 			for (uint32_t i{ start }; i < end; ++i) {
 				VerletBall& obj = ball[i];
 				obj.update(dt, Math::gravity);
+			}
+			});
+		thread_pool.dispatch(static_cast<uint32_t>(ball.size()), [&](uint32_t start, uint32_t end) {
+			for (uint32_t i{ start }; i < end; ++i) {
+				VerletBall& obj = ball[i];
 				collisionwitheachother(i, obj, dt);
 			}
 			});
@@ -147,10 +139,10 @@ public:
 
 	void misc(VerletBall& currentball, sf::VertexArray& vertices)
 	{
-		float energymodifier = 6 / substep;
+		float energymodifier = 5;
 
 		double velocity = (((currentball.displacement.x * currentball.displacement.x) + (currentball.displacement.y * currentball.displacement.y)));
-		currentball.Energy = ((velocity) / ((2.0)));
+		currentball.Energy = ((velocity) / ((2.0))) * substep * substep;
 
 		int scaledEnergy = static_cast<int>((currentball.Energy / (energymodifier)) * 255);
 		scaledEnergy = std::min(255, std::max(0, scaledEnergy));
@@ -169,13 +161,14 @@ public:
 
 	void toVertexArray(sf::VertexArray& vertices, const VerletBall& ball)
 	{
-		sf::Vector2u textureSize = { 100, 100 };
+		uint32_t textsize = 100;
+		sf::Vector2u textureSize = { textsize, textsize };
 		float positionx = ball.position.x;
 		float positiony = ball.position.y;
-		float radius = ball.radius + ball.radius;
-		sf::Vector2f TopLeft(positionx, positiony);
-		sf::Vector2f TopRight(positionx + radius, positiony);
-		sf::Vector2f BottomLeft(positionx, positiony + radius);
+		float radius = ball.radius;
+		sf::Vector2f TopLeft(positionx - radius, positiony - radius);
+		sf::Vector2f TopRight(positionx + radius, positiony - radius);
+		sf::Vector2f BottomLeft(positionx - radius, positiony + radius);
 		sf::Vector2f BottomRight(positionx + radius, positiony + radius);
 
 		sf::Vector2f texTopLeft(0, 0);
