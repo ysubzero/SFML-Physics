@@ -64,7 +64,8 @@ void checkinput(sf::RenderWindow &window, Solver &solver,float &zoomFactor, int 
 
 int main()
 {
-    Solver solver;
+    tp::ThreadPool thread_pool(16);
+    Solver solver(thread_pool);
 
     sf::RenderWindow window({ conf::window_size.x, conf::window_size.y }, "SFML Verlet Integration");
     window.setFramerateLimit(conf::max_framerate);

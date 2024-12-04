@@ -1,15 +1,16 @@
 #include <verlet.hpp>
 //#include <collisiongrid.hpp>
+#include "thread_pool.hpp"
 #include <random>
 
 class Solver
 {
 private:
-	static constexpr int rowsize = 90;
-	static constexpr float radius = 3;
+	static constexpr int rowsize = 180;
+	static constexpr float radius = 2;
 	static constexpr double restitution = 1;
 	static constexpr double startingvel = 1000.0f;
-	static constexpr int mod = 4;
+	static constexpr int mod = 3;
 
 	void collisionwitheachother(int i, VerletBall& currentball, float dt)
 	{
@@ -80,7 +81,7 @@ private:
 		}
 	}
 public:
-	int count = 3000;
+	int count = 10000;
 	static constexpr int substep = 1;
 	double energy = 0;
 	std::vector<VerletBall> ball;
@@ -90,10 +91,13 @@ public:
 	std::uniform_int_distribution<> dis;
 	std::uniform_int_distribution<> clr;
 
-	Solver()
+	tp::ThreadPool& thread_pool;
+
+	Solver(tp::ThreadPool& tp)
 		: gen(rd()),
 		dis(-startingvel, startingvel),
 		clr(50, 255)
+		, thread_pool{tp}
 	{
 		ball.resize(count);
 		for (int i = 0; i < count; i++) {
@@ -117,45 +121,50 @@ public:
 		count++;
 	}
 
+	void updateObjects_multi(float dt)
+	{
+		thread_pool.dispatch(static_cast<uint32_t>(ball.size()), [&](uint32_t start, uint32_t end) {
+			for (uint32_t i{ start }; i < end; ++i) {
+				VerletBall& obj = ball[i];
+				obj.update(dt, Math::gravity);
+				collisionwitheachother(i, obj, dt);
+			}
+			});
+	}
+
 	void update(float dt, sf::VertexArray& vertices)
 	{
 		for (int t = 0; t < substep; t++)
 		{
-			for (int i = 0; i < count; i++)
-			{
-				VerletBall& currentball = ball[i];
-				currentball.update(dt / substep, Math::gravity);
-			}
-			for (int i = 0; i < count; i++)
-			{
-				VerletBall& currentball = ball[i];
-				collisionwitheachother(i, currentball, dt / substep);
-			}
+			updateObjects_multi(dt / substep);
 		}
-		#pragma omp parallel for
 		for (int i = 0; i < count; i++)
 		{
-			float energymodifier = 6 / substep;
-
-			VerletBall& currentball = ball[i];
-
-			double velocity = (((currentball.displacement.x * currentball.displacement.x) + (currentball.displacement.y * currentball.displacement.y)));
-			currentball.Energy = ((velocity) / ((2.0)));
-
-			int scaledEnergy = static_cast<int>((currentball.Energy / (energymodifier)) * 255);
-			scaledEnergy = std::min(255, std::max(0, scaledEnergy));
-
-			int red = scaledEnergy;
-			int greenquadratic = ((scaledEnergy - 128) * (scaledEnergy - 128) * -0.01556) + 255;
-			int green = std::min(255, std::max(0, greenquadratic));
-			int blue = std::max(0, 255 - scaledEnergy * 2);
-
-			currentball.color = (sf::Color(red, green, blue));
-
-			energy += currentball.Energy;
-
-			toVertexArray(vertices, currentball);
+			VerletBall& obj = ball[i];
+			misc(obj, vertices);
 		}
+	}
+
+	void misc(VerletBall& currentball, sf::VertexArray& vertices)
+	{
+		float energymodifier = 6 / substep;
+
+		double velocity = (((currentball.displacement.x * currentball.displacement.x) + (currentball.displacement.y * currentball.displacement.y)));
+		currentball.Energy = ((velocity) / ((2.0)));
+
+		int scaledEnergy = static_cast<int>((currentball.Energy / (energymodifier)) * 255);
+		scaledEnergy = std::min(255, std::max(0, scaledEnergy));
+
+		int red = scaledEnergy;
+		int greenquadratic = ((scaledEnergy - 128) * (scaledEnergy - 128) * -0.01556) + 255;
+		int green = std::min(255, std::max(0, greenquadratic));
+		int blue = std::max(0, 255 - scaledEnergy * 2);
+
+		currentball.color = (sf::Color(red, green, blue));
+
+		energy += currentball.Energy;
+
+		toVertexArray(vertices, currentball);
 	}
 
 	void toVertexArray(sf::VertexArray& vertices, const VerletBall& ball)
