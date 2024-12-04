@@ -13,34 +13,42 @@ private:
 
 	void collisionwitheachother(int i, VerletBall& currentball, float dt)
 	{
-		for (int j = i+1; j < count; j++)
+		for (int j = i + 1; j < count; j++)
 		{
 			VerletBall& OtherBall = ball[j];
-			if (std::abs(currentball.position.x - OtherBall.position.x) > (currentball.radius + OtherBall.radius) ||
-				std::abs(currentball.position.y - OtherBall.position.y) > (currentball.radius + OtherBall.radius))
+			if (abs(currentball.GridX - OtherBall.GridX) <= 1 &&
+				abs(currentball.GridY - OtherBall.GridY) <= 1)
 			{
-				continue;
-			}
-			const sf::Vector2<double> distVect = currentball.center - OtherBall.center;
-			const float distance = std::sqrt(distVect.x * distVect.x + distVect.y * distVect.y);
-			const float nx = distVect.x / distance;
-			const float ny = distVect.y / distance;
+				float bothrad = currentball.radius + OtherBall.radius;
+				if (std::abs(currentball.position.x - OtherBall.position.x) > (bothrad) ||
+					std::abs(currentball.position.y - OtherBall.position.y) > (bothrad))
+				{
+					continue;
+				}
+				const sf::Vector2<double> distVect = currentball.center - OtherBall.center;
+				const double distsquared = distVect.x * distVect.x + distVect.y * distVect.y;
+				const double distance = std::sqrt(distsquared);
+				const double nx = distVect.x / distance;
+				const double ny = distVect.y / distance;
 
-			if ((distance) < (currentball.radius + OtherBall.radius))
-			{
-				currentball.position.x += nx * (currentball.radius + OtherBall.radius - (distance)) * 0.5;
-				OtherBall.position.x -= nx * (currentball.radius + OtherBall.radius - (distance)) * 0.5;
+				if ((distance) < (bothrad))
+				{
+					currentball.position.x += nx * (bothrad - (distance)) * 0.5;
+					OtherBall.position.x -= nx * (bothrad - (distance)) * 0.5;
 
-				currentball.position.y += ny * (currentball.radius + OtherBall.radius - (distance)) * 0.5;
-				OtherBall.position.y -= ny * (currentball.radius + OtherBall.radius - (distance)) * 0.5;
+					currentball.position.y += ny * (bothrad - (distance)) * 0.5;
+					OtherBall.position.y -= ny * (bothrad - (distance)) * 0.5;
 
-				const sf::Vector2<double> ivel = currentball.displacement;
-				const sf::Vector2<double> jvel = OtherBall.displacement;
-				const float dotProduct = Math::dot((ivel - jvel), distVect);
-				currentball.displacement = ivel - distVect * (Math::dot((ivel - jvel), distVect) / (distVect.x * distVect.x + distVect.y * distVect.y)) * restitution;
-				OtherBall.displacement = jvel - distVect * (Math::dot((jvel - ivel), distVect) / (distVect.x * distVect.x + distVect.y * distVect.y)) * restitution;
-				OtherBall.position_last = OtherBall.position - OtherBall.displacement;
-				currentball.position_last = currentball.position - currentball.displacement;
+					const sf::Vector2<double> ivel = currentball.displacement;
+					const sf::Vector2<double> jvel = OtherBall.displacement;
+					const float dotProduct = Math::dot((ivel - jvel), distVect);
+					currentball.displacement = ivel - distVect * (Math::dot((ivel - jvel), distVect) / (distsquared)) * restitution;
+					OtherBall.displacement = jvel - distVect * (Math::dot((jvel - ivel), distVect) / (distsquared)) * restitution;
+					OtherBall.position_last = OtherBall.position - OtherBall.displacement;
+					currentball.position_last = currentball.position - currentball.displacement;
+					currentball.updateGrid();
+					OtherBall.updateGrid();
+				}
 			}
 		}
 
@@ -72,8 +80,8 @@ private:
 		}
 	}
 public:
-	int count = 1000;
-	static constexpr int substep = 4;
+	int count = 3000;
+	static constexpr int substep = 1;
 	double energy = 0;
 	std::vector<VerletBall> ball;
 
@@ -108,7 +116,7 @@ public:
 		ball.push_back(newBall);
 		count++;
 	}
-	
+
 	void update(float dt, sf::VertexArray& vertices)
 	{
 		for (int t = 0; t < substep; t++)
