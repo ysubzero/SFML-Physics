@@ -102,7 +102,6 @@ int main()
         window.clear(sf::Color(128,128,128));
         window.draw(blackBackground);
 
-
         for (auto event = sf::Event(); window.pollEvent(event);)
         {
             if (event.type == sf::Event::Closed)

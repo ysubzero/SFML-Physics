@@ -1,12 +1,13 @@
 #pragma once
+#include <iostream>
 struct CollisionCell 
 {
-	static const int capacity = 4;
-	static const int maxIndex = 3;
+	static const int capacity = 5;
+	static const int maxIndex = 4;
 	static const int neighborCount = 9;
 
 	int ball_count = 0;
-	int maxNeighbors = 0;
+	int maxNeighbors = 8;
 	int ballIndexes[capacity] = {};
 	int neighbors[neighborCount] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
@@ -15,7 +16,7 @@ struct CollisionCell
 	void addBall(int ball_index)
 	{
 		ballIndexes[ball_count] = ball_index;
-		if (ball_count > maxIndex)
+		if (ball_count < maxIndex)
 		{
 			ball_count++;
 		}
