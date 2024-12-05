@@ -1,3 +1,5 @@
+//Portions of this code are licensed and copyright as follows :
+//thread_pool.hpp Copyright (c) 2021 Jean Tampon
 #pragma once
 #include <functional>
 #include <queue>
