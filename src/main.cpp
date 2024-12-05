@@ -64,8 +64,9 @@ void checkinput(sf::RenderWindow &window, Solver &solver,float &zoomFactor, int 
 
 int main()
 {
+    sf::VertexArray vertices(sf::Quads);
     tp::ThreadPool thread_pool(16);
-    Solver solver(thread_pool);
+    Solver solver(thread_pool, vertices);
 
     sf::RenderWindow window({ conf::window_size.x, conf::window_size.y }, "SFML Verlet Integration");
     window.setFramerateLimit(conf::max_framerate);
@@ -83,7 +84,6 @@ int main()
 
     loadfiles(consolas, energy, deltatime, collision, collisionsound, texture);
 
-    sf::VertexArray vertices(sf::Quads);
     sf::RectangleShape blackBackground(sf::Vector2f(conf::constraints.x, conf::constraints.y));
     blackBackground.setPosition(0, 0);
     blackBackground.setFillColor(sf::Color::Black);

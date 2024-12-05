@@ -92,12 +92,14 @@ public:
 	std::uniform_int_distribution<> clr;
 
 	tp::ThreadPool& thread_pool;
+	sf::VertexArray& vertices;
 
-	Solver(tp::ThreadPool& tp)
+	Solver(tp::ThreadPool& tp, sf::VertexArray& _vertices)
 		: gen(rd()),
 		dis(-startingvel, startingvel),
 		clr(50, 255)
-		, thread_pool{tp}
+		, thread_pool{tp},
+		vertices(_vertices)
 	{
 		ball.resize(count);
 		for (int i = 0; i < count; i++) {
@@ -143,6 +145,7 @@ public:
 			VerletBall& obj = ball[i];
 			misc(obj, vertices);
 		}
+		toVertexArraymulti();
 	}
 
 	void misc(VerletBall& currentball, sf::VertexArray& vertices)
@@ -163,29 +166,32 @@ public:
 		currentball.color = (sf::Color(red, green, blue));
 
 		energy += currentball.Energy;
-
-		toVertexArray(vertices, currentball);
 	}
 
-	void toVertexArray(sf::VertexArray& vertices, const VerletBall& ball)
+	void toVertexArraymulti()
 	{
-		sf::Vector2u textureSize = { 100, 100 };
-		float positionx = ball.position.x;
-		float positiony = ball.position.y;
-		float radius = ball.radius + ball.radius;
-		sf::Vector2f TopLeft(positionx, positiony);
-		sf::Vector2f TopRight(positionx + radius, positiony);
-		sf::Vector2f BottomLeft(positionx, positiony + radius);
-		sf::Vector2f BottomRight(positionx + radius, positiony + radius);
+		vertices.resize(ball.size() * 4);
+		const float textsize = 100;
+		thread_pool.dispatch(static_cast<uint32_t>(ball.size()), [&](uint32_t start, uint32_t end) {
+			for (uint32_t i{ start }; i < end; ++i)
+			{
+				const VerletBall& balle = ball[i];
+				const uint32_t index = i << 2;
+				vertices[index + 0].position = sf::Vector2f{ static_cast<float>(-radius + balle.position.x), static_cast<float>(-radius + balle.position.y) };
+				vertices[index + 1].position = sf::Vector2f{ static_cast<float>(radius + balle.position.x), static_cast<float>(-radius + balle.position.y) };
+				vertices[index + 2].position = sf::Vector2f{ static_cast<float>(radius + balle.position.x), static_cast<float>(radius + balle.position.y) };
+				vertices[index + 3].position = sf::Vector2f{ static_cast<float>(-radius + balle.position.x), static_cast<float>(radius + balle.position.y) };
+				vertices[index + 0].texCoords = { 0.0f        , 0.0f };
+				vertices[index + 1].texCoords = { textsize, 0.0f };
+				vertices[index + 2].texCoords = { textsize, textsize };
+				vertices[index + 3].texCoords = { 0.0f, textsize };
 
-		sf::Vector2f texTopLeft(0, 0);
-		sf::Vector2f texTopRight(textureSize.x, 0);
-		sf::Vector2f texBottomRight(textureSize.x, textureSize.y);
-		sf::Vector2f texBottomLeft(0, textureSize.y);
-
-		vertices.append(sf::Vertex(TopLeft, ball.color, texTopLeft));
-		vertices.append(sf::Vertex(TopRight, ball.color, texTopRight));
-		vertices.append(sf::Vertex(BottomRight, ball.color, texBottomRight));
-		vertices.append(sf::Vertex(BottomLeft, ball.color, texBottomLeft));
+				const sf::Color color = balle.color;
+				vertices[index + 0].color = color;
+				vertices[index + 1].color = color;
+				vertices[index + 2].color = color;
+				vertices[index + 3].color = color;
+			}
+			});
 	}
 };
