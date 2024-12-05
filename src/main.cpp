@@ -5,7 +5,7 @@
 #include <iostream>
 #include "solver.cpp"
 
-void loadfiles(sf::Font &consolas, sf::Text &energy, sf::Text &deltatime, sf::SoundBuffer &collision, sf::Sound collisionsound, sf::Texture &texture)
+void loadfiles(sf::Font &consolas, sf::Text &energy, sf::Text &deltatime, sf::Text &count, sf::SoundBuffer &collision, sf::Sound collisionsound, sf::Texture &texture)
 {
     if (!consolas.loadFromFile("C:\\Users\\Jandy\\source\\SFML-Physics\\SFML-Physics\\files\\Consolas.ttf"))
     {
@@ -21,6 +21,8 @@ void loadfiles(sf::Font &consolas, sf::Text &energy, sf::Text &deltatime, sf::So
     energy.setFont(consolas);
     deltatime.setFont(consolas);
     deltatime.setPosition(sf::Vector2f(0, 100));
+    count.setFont(consolas);
+    count.setPosition(sf::Vector2f(0, 200));
     collisionsound.setBuffer(collision);
 }
 
@@ -59,13 +61,14 @@ void checkinput(sf::RenderWindow &window, Solver &solver,float &zoomFactor, int 
         deltaY = 0;
         deltaX = 0;
     }
+    view.setSize(conf::window_size.x * zoomFactor, conf::window_size.y * zoomFactor);
+    view.setCenter(conf::window_size.x / 2 + deltaX, conf::window_size.y / 2 + deltaY);
     stopinfiniteball--;
 }
 
 int main()
 {
     tp::ThreadPool thread_pool(16);
-    Solver solver(thread_pool);
 
     sf::RenderWindow window({ conf::window_size.x, conf::window_size.y }, "SFML Verlet Integration");
     window.setFramerateLimit(conf::max_framerate);
@@ -73,20 +76,24 @@ int main()
     view.setCenter(conf::window_size.x / 2, conf::window_size.y / 2);
     window.setView(view);
 
+    sf::VertexArray vertices(sf::Quads);
+
+    Solver solver(thread_pool, vertices);
+
     sf::Font consolas;
     sf::Text energy;
     sf::Text deltatime;
+    sf::Text count;
     sf::SoundBuffer collision;
     sf::Sound collisionsound;
     sf::Clock clock;
     sf::Texture texture;
 
-    loadfiles(consolas, energy, deltatime, collision, collisionsound, texture);
+    loadfiles(consolas, energy, deltatime, count, collision, collisionsound, texture);
 
-    sf::VertexArray vertices(sf::Quads);
     sf::RectangleShape blackBackground(sf::Vector2f(conf::constraints.x, conf::constraints.y));
     blackBackground.setPosition(0, 0);
-    blackBackground.setFillColor(sf::Color::Black);
+    blackBackground.setFillColor(sf::Color(100,100,100));
 
     float zoomFactor = 1;
     int deltaY = 0;
@@ -99,7 +106,7 @@ int main()
     while (window.isOpen())
     {
         vertices.clear();
-        window.clear(sf::Color(128,128,128));
+        window.clear(sf::Color(0,0,0));
         window.draw(blackBackground);
 
         for (auto event = sf::Event(); window.pollEvent(event);)
@@ -110,32 +117,24 @@ int main()
             }
         }
 
-        solver.update(conf::dt, vertices);
+        solver.update(conf::dt);
         window.draw(vertices, states);
 
-       // for (int i = 0; i < solver.count; i++)
-        //{
-            //if (solver.ball[i].collide == true)
-            //{
-               // collisionsound.play();
-            //}
-       //}
         if (window.hasFocus())
         {
             checkinput(window, solver, zoomFactor, deltaY, deltaX, view);
         }
 
-        view.setSize(conf::window_size.x * zoomFactor, conf::window_size.y * zoomFactor);
-        view.setCenter(conf::window_size.x / 2 + deltaX, conf::window_size.y / 2 + deltaY);
-
-        energy.setString(std::to_string(solver.energy));
+        energy.setString(std::to_string(solver.Total_energy) + " kilogram pixels\xB2/second\xB2");
         float currenttime = clock.restart().asSeconds();
-        deltatime.setString(std::to_string(1.0f/currenttime));
+        deltatime.setString(std::to_string(1.0f/currenttime) + " FPS");
+        count.setString(std::to_string(solver.count) + " Balls");
         window.setView(view);
         window.draw(deltatime);
         window.draw(energy);
+        window.draw(count);
         window.display();
-        solver.energy = 0;
+        solver.Total_energy = 0;
         currenttime = 0;
 
     }

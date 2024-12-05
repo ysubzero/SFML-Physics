@@ -12,6 +12,16 @@ struct Math
         return { v1.x * v2.x + v1.y * v2.y };
     }
 
+    static double magnitude_squared(sf::Vector2<double> v1)
+    {
+        return { v1.x * v1.x + v1.y * v1.y };
+    }
+
+    static double magnitude(sf::Vector2<double> v1)
+    {
+        return { std::sqrt(magnitude_squared(v1))};
+    }
+
     float arctan2(sf::Vector2<double> origin, sf::Vector2<double> end)
     {
         return std::atan2(origin.y - end.y, origin.x - end.x);

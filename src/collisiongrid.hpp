@@ -2,8 +2,8 @@
 #include <iostream>
 struct CollisionCell 
 {
-	static const int capacity = 5;
-	static const int maxIndex = 4;
+	static const int capacity = 4;
+	static const int maxIndex = 3;
 	static const int neighborCount = 9;
 
 	int ball_count = 0;

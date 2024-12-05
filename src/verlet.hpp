@@ -14,7 +14,6 @@ struct VerletBall
 	sf::Vector2<double> position_next;
 	sf::Vector2<double> displacement;
 	sf::Vector2<double> acceleration;
-	double Energy;
 	float radius;
 	sf::Color color;
 
@@ -23,8 +22,7 @@ struct VerletBall
 		position_last((conf::constraints.x) / 2, 0.0f),
 		displacement(position - position_last),
 		acceleration(0, 0),
-		radius(10.0f),
-		Energy(0.0),
+		radius(1.0f),
 		color(sf::Color::White)
 	{}
 
