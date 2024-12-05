@@ -8,8 +8,8 @@
 class Solver
 {
 private:
-	static constexpr int rowsize = 600;
-	static constexpr float radius = 1;
+	static constexpr int rowsize = 200;
+	static constexpr float radius = 3;
 	static constexpr double restitution = 1;
 	static constexpr double startingvel = 100000.0f;
 	static constexpr int mod = 3;
@@ -18,8 +18,8 @@ private:
 	void addGrid(int i)
 	{
 		VerletBall& me = balls[i];
-		int GridX = me.position.x / (2 * radius);
-		int GridY = me.position.y / (2 * radius);
+		int GridX = me.position.x / (2 * radius) + 1;
+		int GridY = me.position.y / (2 * radius) + 1;
 		int index = GridY * grid.columns + GridX;
 		index = std::clamp(index, 0, (grid.columns * grid.rows)-1);
 		grid.cells[index].addBall(i);
@@ -109,8 +109,8 @@ private:
 	}
 
 public:
-	int count = 100000;
-	static constexpr int substep = 1;
+	int count = 10000;
+	static constexpr int substep = 8;
 	double Total_energy = 0;
 	std::vector<VerletBall> balls;
 
@@ -127,7 +127,7 @@ public:
 		: gen(rd()),
 		dis(-startingvel, startingvel),
 		clr(50, 255),
-		grid(conf::constraints.x / (2*radius), conf::constraints.y/ (2*radius)),
+		grid((conf::constraints.x / (2*radius)) + 2, (conf::constraints.y/ (2*radius)) + 2),
 		thread_pool{tp},
 		vertices(_vertices)
 	{
@@ -156,7 +156,11 @@ public:
 
 	void updateObjects_multi(double dt)
 	{
-		grid.clear();
+		thread_pool.dispatch(static_cast<uint32_t>(grid.cells.size()), [&](uint32_t start, uint32_t end) {
+			for (uint32_t i{ start }; i < end; ++i) {
+				grid.cells[i].clear();
+			}
+			});
 		thread_pool.dispatch(static_cast<uint32_t>(balls.size()), [&](uint32_t start, uint32_t end) {
 			for (uint32_t i{ start }; i < end; ++i) {
 				VerletBall& ball = balls[i];
