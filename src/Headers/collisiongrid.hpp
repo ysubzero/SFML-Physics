@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <array>
 struct CollisionCell 
 {
 	static const int capacity = 4;
@@ -8,16 +9,16 @@ struct CollisionCell
 
 	int ball_count = 0;
 	int maxNeighbors = 8;
-	int ballIndexes[capacity] = {};
-	int neighbors[neighborCount] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+	std::array<int, capacity> ballIndexes = {};
+	std::array<int, neighborCount> neighbors = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 	CollisionCell() = default;
 
-	void addBall(int ball_index)
+	void addBall(const int ball_index)
 	{
-		ballIndexes[ball_count] = ball_index;
 		if (ball_count < maxIndex)
 		{
+			ballIndexes[ball_count] = ball_index;
 			ball_count++;
 		}
 	}
@@ -38,7 +39,7 @@ struct CollisionGrid
 		, rows(0)
 	{}
 
-	CollisionGrid(int _columns, int _rows)
+	CollisionGrid(const int _columns, const int _rows)
 		: columns(_columns)
 		, rows(_rows)
 	{
@@ -97,13 +98,13 @@ struct CollisionGrid
 		}
 	}
 
-	void addBall(int x, int y, int ball)
+	void addBall(const int x, const int y, const int ball)
 	{
 		int cellIndex = (x * rows) + y;
 		cells[cellIndex].addBall(ball);
 	}
 
-	void IdxAddBall(int index, int ball)
+	void IdxAddBall(const int index, const int ball)
 	{
 		cells[index].addBall(ball);
 	}

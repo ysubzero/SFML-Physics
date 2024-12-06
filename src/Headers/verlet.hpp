@@ -1,7 +1,6 @@
 #pragma once
-#include <math.hpp>
-#include <collisiongrid.hpp>
-#include <configuration.hpp>
+#include <Headers/math.hpp>
+#include <Headers/configuration.hpp>
 #include <SFML/Graphics.hpp>
 #include <cmath>
 #include <omp.h>
@@ -15,6 +14,8 @@ struct VerletBall
 	sf::Vector2<double> displacement;
 	sf::Vector2<double> acceleration;
 	float radius;
+	double Mass;
+	double Energy;
 	sf::Color color;
 
 	VerletBall()
@@ -22,11 +23,13 @@ struct VerletBall
 		position_last((conf::constraints.x) / 2, 0.0f),
 		displacement(position - position_last),
 		acceleration(0, 0),
+		Mass(1),
+		Energy(0),
 		radius(1.0f),
 		color(sf::Color::White)
 	{}
 
-	void update(double dt, double gravity)
+	void update(const double dt, const double gravity)
 	{
 		displacement = position - position_last;
 		position_next = position + displacement + acceleration * dt * dt;
