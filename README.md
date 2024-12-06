@@ -5,3 +5,7 @@ WASD to move camera
 UP to zoom in
 DOWN to zoom out
 R to reset camera
+
+To install:  
+Generate build  (CXX 23) (Do a release build for best performance)
+Place the files folder into the bin of the exe. Without this, you will have no fonts.

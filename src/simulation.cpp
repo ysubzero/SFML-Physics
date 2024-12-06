@@ -22,16 +22,19 @@ private:
     const double restitution;
     const double startingvel;
     const double dt;
+    const uint32_t threadpoolsize;
+
+    bool ThermalColors;
 
     sf::Vector2f const constraints;
 
     void loadfiles(sf::Font& consolas, sf::Text& energy, sf::Text& deltatime, sf::Text& count, sf::Texture& texture)
     {
-        if (!consolas.loadFromFile("C:\\Users\\Jandy\\source\\SFML-Physics\\SFML-Physics\\files\\Consolas.ttf"))
+        if (!consolas.loadFromFile("files\\Consolas.ttf"))
         {
             std::cout << "Error\n";
         }
-        if (!texture.loadFromFile("C:\\Users\\Jandy\\source\\SFML-Physics\\SFML-Physics\\files\\circle.png"))
+        if (!texture.loadFromFile("files\\circle.png"))
         {
             std::cout << "Error\n";
         }
@@ -85,6 +88,9 @@ private:
 
 
 public:
+
+    bool isRunning = true;
+
     Simulation(
         int _count = 100000,
         int _row_size = 600,
@@ -96,7 +102,9 @@ public:
         double _mod = 2.5,
         double _restitution = 1.0,
         double _startingvel = 100.0,
-        double _dt = 1.0/170.0
+        double _dt = 1.0 / 170.0,
+        bool _ThermalColors = true,
+        uint32_t _threadpoolsize = 16
     ) :
         count(_count),
         row_size(_row_size),
@@ -109,22 +117,24 @@ public:
         restitution(_restitution),
         startingvel(_startingvel),
         constraints(sf::Vector2f(_constraintx, constrainty)),
-        dt(_dt)
+        dt(_dt),
+        ThermalColors(_ThermalColors),
+        threadpoolsize(_threadpoolsize)
     {}
 
     void Solution()
     {
-        tp::ThreadPool thread_pool(16);
+        tp::ThreadPool thread_pool(threadpoolsize);
 
         sf::RenderWindow window({ conf::window_size.x, conf::window_size.y }, "SFML Verlet Integration");
-        window.setFramerateLimit(conf::max_framerate);
+        window.setFramerateLimit(max_framerate);
         sf::View view(sf::FloatRect(0, 0, conf::window_size.x, conf::window_size.y));
         view.setCenter(conf::window_size.x / 2, conf::window_size.y / 2);
         window.setView(view);
 
         sf::VertexArray vertices(sf::Quads);
 
-        Solver solver(thread_pool, vertices, count, substeps, row_size, radius, restitution, startingvel, mod, constraints);
+        Solver solver(thread_pool, vertices, count, substeps, row_size, radius, restitution, startingvel, mod, constraints, ThermalColors);
 
         sf::Font consolas;
         sf::Text energy;
@@ -149,9 +159,6 @@ public:
 
         while (window.isOpen())
         {
-            vertices.clear();
-            window.clear(sf::Color(100, 100, 100));
-            window.draw(blackBackground);
 
             for (auto event = sf::Event(); window.pollEvent(event);)
             {
@@ -159,27 +166,46 @@ public:
                 {
                     window.close();
                 }
+                if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::Escape))
+                {
+                    if (isRunning)
+                    {
+                        isRunning = false;
+                    }
+                    else
+                    {
+                        isRunning = true;
+                    }
+                }
             }
 
-            solver.update(dt);
-            window.draw(vertices, states);
-
-            if (window.hasFocus())
-            {
-                checkinput(window, solver, zoomFactor, deltaY, deltaX, view);
-            }
-
-            energy.setString(std::to_string(solver.Total_energy) + " kilogram pixels\xB2/second\xB2");
             float currenttime = clock.restart().asSeconds();
-            deltatime.setString(std::to_string(1.0f / currenttime) + " FPS");
-            count.setString(std::to_string(solver.count) + " Balls");
-            window.setView(view);
-            window.draw(deltatime);
-            window.draw(energy);
-            window.draw(count);
-            window.display();
-            solver.Total_energy = 0;
-            currenttime = 0;
+
+            if (isRunning)
+            {
+                vertices.clear();
+                window.clear(sf::Color(100, 100, 100));
+                window.draw(blackBackground);
+
+                solver.update(dt);
+
+                if (window.hasFocus())
+                {
+                    checkinput(window, solver, zoomFactor, deltaY, deltaX, view);
+                }
+
+                energy.setString(std::to_string(solver.Total_energy) + " kilogram pixels\xB2/second\xB2");
+                deltatime.setString(std::to_string(1.0f / currenttime) + " FPS");
+                count.setString(std::to_string(solver.count) + " Balls");
+                window.setView(view);
+                window.draw(vertices, states);
+                window.draw(deltatime);
+                window.draw(energy);
+                window.draw(count);
+                window.display();
+                solver.Total_energy = 0;
+                currenttime = 0;
+            }
 
         }
     }

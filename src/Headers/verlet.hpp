@@ -19,8 +19,8 @@ struct VerletBall
 	sf::Color color;
 
 	VerletBall()
-		: position((conf::constraints.x) / 2, 0.0f),
-		position_last((conf::constraints.x) / 2, 0.0f),
+		: position(0.0, 0.0),
+		position_last(0.0, 0.0),
 		displacement(position - position_last),
 		acceleration(0, 0),
 		Mass(1),

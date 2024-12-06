@@ -12,14 +12,17 @@ public:
 	int count;
 	const int substep;
 	const int rowsize;
+
 	const float radius;
 	const double restitution;
 	const double startingvel;
 	const double mod;
 	double collisionrestitution;
+
 	sf::Vector2f const constraints;
 
 	double Total_energy = 0;
+	bool ThermalColors = true;
 	std::vector<VerletBall> balls;
 
 	std::random_device rd;
@@ -41,7 +44,8 @@ public:
 		const double _restitution = 1.0,
 		const double _startingvel = 300000.0,
 		const double _mod = 2.5,
-		sf::Vector2f const _constraints = sf::Vector2f(1920, 1080)
+		sf::Vector2f const _constraints = sf::Vector2f(1920, 1080),
+		bool _ThermalColors = true
 	)
 		:
 		clr(50, 255),
@@ -62,12 +66,16 @@ public:
 	{
 		grid.InitializeNeighbors();
 		balls.resize(count);
+		ThermalColors = _ThermalColors;
 		for (int i = 0; i < count; i++) {
 			balls[i].radius = radius;
 			balls[i].position = sf::Vector2<double>(radius * mod * (i % rowsize) + 100, radius * mod * (i / rowsize) + 100);
 			balls[i].position_last = balls[i].position;
 			balls[i].acceleration = sf::Vector2<double>(dis(gen), dis(gen));
-			balls[i].color = sf::Color(clr(gen), clr(gen), clr(gen));
+			if (!ThermalColors)
+			{
+				balls[i].color = sf::Color(clr(gen), clr(gen), clr(gen));
+			}
 		}
 	}
 
@@ -127,20 +135,23 @@ public:
 
 	void misc(VerletBall& ball)
 	{
-		//float energymodifier = 5;
+		const float energymodifier = 5;
 
 		double velocity = Math::magnitude_squared(ball.displacement);
 		ball.Energy = ((velocity) / ((2.0))) * substep * substep;
 
-		//int scaledEnergy = static_cast<int>((ball.Energy / (energymodifier)) * 255);
-		//scaledEnergy = std::min(255, std::max(0, scaledEnergy));
+		if (ThermalColors)
+		{
+			int scaledEnergy = static_cast<int>((ball.Energy / (energymodifier)) * 255);
+			scaledEnergy = std::min(255, std::max(0, scaledEnergy));
 
-		//int red = scaledEnergy;
-		//int greenquadratic = ((scaledEnergy - 128) * (scaledEnergy - 128) * -0.01556) + 255;
-		//int green = std::min(255, std::max(0, greenquadratic));
-		//int blue = std::max(0, 255 - scaledEnergy * 2);
+			int red = scaledEnergy;
+			int greenquadratic = ((scaledEnergy - 128) * (scaledEnergy - 128) * -0.01556) + 255;
+			int green = std::min(255, std::max(0, greenquadratic));
+			int blue = std::max(0, 255 - scaledEnergy * 2);
 
-		//ball.color = (sf::Color(red, green, blue));
+			ball.color = (sf::Color(red, green, blue));
+		}
 	}
 
 	void toVertexArraymulti()
@@ -254,15 +265,15 @@ private:
 
 	void constrain(VerletBall& ball)
 	{
-		if (ball.position.x > conf::constraints.x - ball.radius || ball.position.x < ball.radius)
+		if (ball.position.x > constraints.x - ball.radius || ball.position.x < ball.radius)
 		{
-			ball.position.x = std::clamp(ball.position.x, static_cast<double>(ball.radius), static_cast<double>(conf::constraints.x - ball.radius));
+			ball.position.x = std::clamp(ball.position.x, static_cast<double>(ball.radius), static_cast<double>(constraints.x - ball.radius));
 			ball.position_last.x = ball.position.x + (ball.displacement.x * restitution);
 		}
 
-		if (ball.position.y > conf::constraints.y - ball.radius || ball.position.y < ball.radius)
+		if (ball.position.y > constraints.y - ball.radius || ball.position.y < ball.radius)
 		{
-			ball.position.y = std::clamp(ball.position.y, static_cast<double>(ball.radius), static_cast<double>(conf::constraints.y - ball.radius));
+			ball.position.y = std::clamp(ball.position.y, static_cast<double>(ball.radius), static_cast<double>(constraints.y - ball.radius));
 			ball.position_last.y = ball.position.y + (ball.displacement.y * restitution);
 		}
 	}
