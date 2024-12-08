@@ -18,9 +18,9 @@ struct CollisionCell
 
 	void addBall(const int ball_index)
 	{
+		ballIndexes[ball_count] = ball_index;
 		if (ball_count < maxIndex)
 		{
-			ballIndexes[ball_count] = ball_index;
 			ball_count++;
 		}
 	}

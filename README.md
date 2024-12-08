@@ -4,7 +4,9 @@ Controls
 WASD to move camera  
 UP to zoom in
 DOWN to zoom out
-R to reset camera
+R to reset camera  
+ESC to pause  
+Middle mouse and Right mouse buttons to affect the simulation. :)  
 
 To install:  
 Generate build  (CXX 23) (Do a release build for best performance)

@@ -1,13 +1,16 @@
-#include "simulation.cpp"
-#include "imgui.h"
-#include "imgui-SFML.h"
-#include <Headers/configuration.hpp>
-#include <SFML/Graphics.hpp>
 #include <thread>
 #include <algorithm>
 #include <memory>
 #include <fstream>
 #include <iostream>
+
+#include <SFML/Graphics.hpp>
+#include "imgui.h"
+#include "imgui-SFML.h"
+
+#include "simulation.cpp"
+
+#include <Headers/configuration.hpp>
 
 
 class GUI

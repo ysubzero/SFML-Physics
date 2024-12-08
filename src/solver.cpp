@@ -23,9 +23,11 @@ SOFTWARE.*/
 
 #include <SFML/Graphics.hpp>
 #include <SFML/OpenGL.hpp>
+
 #include <Headers/verlet.hpp>
 #include <Headers/collisiongrid.hpp>
 #include <Headers/thread_pool.hpp>
+
 #include <random>
 #include <algorithm>
 
@@ -45,7 +47,7 @@ public:
 	sf::Vector2f const constraints;
 
 	double Total_energy = 0;
-	bool ThermalColors = true;
+	const bool ThermalColors;
 	std::vector<VerletBall> balls;
 
 	Solver(
@@ -59,7 +61,7 @@ public:
 		const double _startingvel = 5.0,
 		const double _mod = 2.5,
 		sf::Vector2f const _constraints = sf::Vector2f(1920, 1080),
-		bool _ThermalColors = true
+		const bool _ThermalColors = true
 	)
 		:
 		clr(50, 255),
@@ -76,11 +78,11 @@ public:
 		gen(rd()),
 		dis(-startingvel, startingvel),
 		mod(_mod),
-		collisionrestitution(1.0 - ((1 - restitution) / 2.0))
+		collisionrestitution(1.0 - ((1 - restitution) / 2.0)),
+		ThermalColors(_ThermalColors)
 	{
 		grid.InitializeNeighbors();
 		balls.resize(count);
-		ThermalColors = _ThermalColors;
 		thread_pool.dispatch(static_cast<uint32_t>(balls.size()), [&](uint32_t start, uint32_t end) {
 			for (uint32_t i{ start }; i < end; ++i) {
 				VerletBall& ball = balls[i];

@@ -1,8 +1,11 @@
 #include <SFML/Graphics.hpp>
+
 #include <Headers/configuration.hpp>
 #include <Headers/verlet.hpp>
+
 #include <SFML/Audio.hpp>
 #include <iostream>
+
 #include "solver.cpp"
 
 class Simulation
@@ -12,6 +15,7 @@ private:
     const int row_size;
     const int substeps;
     const int max_framerate;
+    const bool ThermalColors;
 
     const float radius;
     const float constraintx;
@@ -23,11 +27,10 @@ private:
     const double dt;
     const uint32_t threadpoolsize;
 
-    bool fullscreen;
+    const bool fullscreen;
     const uint32_t resolutionx;
     const uint32_t resolutiony;
 
-    bool ThermalColors;
 
     sf::Vector2f const constraints;
 
@@ -95,21 +98,21 @@ public:
     bool isRunning = true;
 
     Simulation(
-        int _count = 100000,
-        int _row_size = 600,
-        int _substeps = 1,
-        int _max_framerate = 170,
-        float _radius = 1.0f,
-        float _constraintx = 1920.0f,
-        float _constrainty = 1080.0f,
-        double _mod = 2.5,
-        double _restitution = 1.0,
-        double _startingvel = 5.0,
-        double _dt = 1.0 / 170.0,
-        bool _ThermalColors = true,
-        uint32_t _threadpoolsize = 16,
-        double _gravity = 98.0,
-        bool _fullscreen = false,
+        const int _count = 100000,
+        const int _row_size = 600,
+        const int _substeps = 1,
+        const int _max_framerate = 170,
+        const float _radius = 1.0f,
+        const float _constraintx = 1920.0f,
+        const float _constrainty = 1080.0f,
+        const double _mod = 2.5,
+        const double _restitution = 1.0,
+        const double _startingvel = 5.0,
+        const double _dt = 1.0 / 170.0,
+        const bool _ThermalColors = true,
+        const uint32_t _threadpoolsize = 16,
+        const double _gravity = 98.0,
+        const bool _fullscreen = false,
         uint32_t _resolutionx = 1920,
         uint32_t _resolutiony = 1080
     ) :
@@ -203,12 +206,10 @@ public:
                 }
                 if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::R))
                 {
-                    if (sf::Keyboard::isKeyPressed(sf::Keyboard::R)) {
-                        view.setCenter(resolutionx / 2, resolutiony / 2);
-                        zoomFactor = 1;
-                        deltaY = 0;
-                        deltaX = 0;
-                    }
+                    view.setCenter(resolutionx / 2, resolutiony / 2);
+                    zoomFactor = 1;
+                    deltaY = 0;
+                    deltaX = 0;
                 }
             }
 
