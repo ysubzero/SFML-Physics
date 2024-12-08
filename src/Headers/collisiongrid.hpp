@@ -1,6 +1,8 @@
 #pragma once
 #include <iostream>
 #include <array>
+#include <vector>
+
 struct CollisionCell 
 {
 	static const int capacity = 4;

@@ -47,3 +47,8 @@ if(WIN32)
         PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${SFML_SOURCE_DIR}/extlibs/bin/$<IF:$<EQUAL:${CMAKE_SIZEOF_VOID_P},8>,x64,x86>/openal32.dll $<TARGET_FILE_DIR:${PROJECT_NAME}>
         VERBATIM)
 endif()
+
+#if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+#    set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=*")
+#    message(STATUS "Clang-Tidy enabled with Clang compiler")
+#endif()

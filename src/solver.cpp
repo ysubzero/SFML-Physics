@@ -1,5 +1,28 @@
-#pragma once
+//Portions of this code are licensed and copyright as follows :
+/*MIT License
+
+Copyright(c) 2021 Jean Tampon
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files(the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and /or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions :
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.*/
+
 #include <SFML/Graphics.hpp>
+#include <SFML/OpenGL.hpp>
 #include <Headers/verlet.hpp>
 #include <Headers/collisiongrid.hpp>
 #include <Headers/thread_pool.hpp>
@@ -25,15 +48,6 @@ public:
 	bool ThermalColors = true;
 	std::vector<VerletBall> balls;
 
-	std::random_device rd;
-	std::mt19937 gen;
-	std::uniform_int_distribution<> dis;
-	std::uniform_int_distribution<> clr;
-
-	tp::ThreadPool& thread_pool;
-	CollisionGrid grid;
-	sf::VertexArray& vertices;
-
 	Solver(
 		tp::ThreadPool& tp,
 		sf::VertexArray& _vertices,
@@ -42,7 +56,7 @@ public:
 		const int _rowsize = 600,
 		const float _radius = 1.0f,
 		const double _restitution = 1.0,
-		const double _startingvel = 300000.0,
+		const double _startingvel = 5.0,
 		const double _mod = 2.5,
 		sf::Vector2f const _constraints = sf::Vector2f(1920, 1080),
 		bool _ThermalColors = true
@@ -67,16 +81,18 @@ public:
 		grid.InitializeNeighbors();
 		balls.resize(count);
 		ThermalColors = _ThermalColors;
-		for (int i = 0; i < count; i++) {
-			balls[i].radius = radius;
-			balls[i].position = sf::Vector2<double>(radius * mod * (i % rowsize) + 100, radius * mod * (i / rowsize) + 100);
-			balls[i].position_last = balls[i].position;
-			balls[i].acceleration = sf::Vector2<double>(dis(gen), dis(gen));
-			if (!ThermalColors)
-			{
-				balls[i].color = sf::Color(clr(gen), clr(gen), clr(gen));
+		thread_pool.dispatch(static_cast<uint32_t>(balls.size()), [&](uint32_t start, uint32_t end) {
+			for (uint32_t i{ start }; i < end; ++i) {
+				VerletBall& ball = balls[i];
+				ball.radius = radius;
+				ball.position = sf::Vector2<double>(radius * mod * (i % rowsize) + std::min((6 * radius + 1.0), 100.0), radius * mod * (i / rowsize) + std::min((6 * radius + 1.0), 100.0));
+				ball.position_last = sf::Vector2<double>(ball.position.x + (dis(gen) / 3.0), ball.position.y + (dis(gen) / 3.0));
+				if (!ThermalColors)
+				{
+					ball.color = sf::Color(clr(gen), clr(gen), clr(gen));
+				}
 			}
-		}
+			});
 	}
 
 	//balls[0].color = sf::Color::Yellow;
@@ -91,39 +107,41 @@ public:
 		count++;
 	}
 
-	void updateObjects_multi(const double dt)
+	void mouse(const sf::Vector2f pos, const double dt)
 	{
-		thread_pool.dispatch(static_cast<uint32_t>(grid.cells.size()), [&](uint32_t start, uint32_t end) {
-			for (uint32_t i{ start }; i < end; ++i) {
-				grid.cells[i].clear();
+		int GridX = pos.x / (2 * radius) + 1;
+		if (GridX < 0 || GridX >= grid.columns)
+		{
+			return;
+		}
+		int GridY = pos.y / (2 * radius) + 1;
+		if (GridY < 0 || GridY >= grid.rows)
+		{
+			return;
+		}
+		int index = GridY * grid.columns + GridX;
+		if (index < 0 || index > (grid.rows * grid.columns) - 1)
+		{
+			return;
+		}
+		for (int j = 0; j < grid.cells[index].maxNeighbors; ++j)
+		{
+			for (int k = 0; k < grid.cells[grid.cells[index].neighbors[j]].ball_count; ++k)
+			{
+				VerletBall& ball = balls[grid.cells[grid.cells[index].neighbors[j]].ballIndexes[k]];
+				const sf::Vector2<double> direction = sf::Vector2<double>(pos.x, pos.y) - ball.position;
+				const double dist = Math::magnitude(direction);
+				ball.position_last -= sf::Vector2<double>(direction.x * -(0.12 - dist/radius), direction.y * -(0.12 - dist/radius));
 			}
-			});
-		thread_pool.dispatch(static_cast<uint32_t>(balls.size()), [&](uint32_t start, uint32_t end) {
-			for (uint32_t i{ start }; i < end; ++i) {
-				VerletBall& ball = balls[i];
-				ball.update(dt, Math::gravity);
-				addGrid(i);
-			}
-			});
-		thread_pool.dispatch(static_cast<uint32_t>(grid.cells.size()), [&](uint32_t start, uint32_t end) {
-			for (uint32_t i{ start }; i < end; ++i) {
-				solveCollision(i);
-			}
-			});
-		thread_pool.dispatch(static_cast<uint32_t>(balls.size()), [&](uint32_t start, uint32_t end) {
-			for (uint32_t i{ start }; i < end; ++i) {
-				VerletBall& ball = balls[i];
-				constrain(ball);
-				misc(ball);
-			}
-			});
+		}
 	}
 
-	void update(const double dt)
+	void update(const double dt, const double gravity)
 	{
+		Total_energy = 0;
 		for (int t = 0; t < substep; t++)
 		{
-			updateObjects_multi(dt / substep);
+			updateObjects_multi(dt / substep, gravity);
 		}
 		toVertexArraymulti();
 		for (int i = 0; i < count; i++)
@@ -133,15 +151,156 @@ public:
 		}
 	}
 
+
+private:
+
+	std::random_device rd;
+	std::mt19937 gen;
+	std::uniform_real_distribution<> dis;
+	std::uniform_int_distribution<> clr;
+
+	tp::ThreadPool& thread_pool;
+	CollisionGrid grid;
+	sf::VertexArray& vertices;
+
+
+	void addGrid(const VerletBall& me, const int i)
+	{
+		int GridX = me.position.x / (2 * radius) + 1;
+		int GridY = me.position.y / (2 * radius) + 1;
+		int index = GridY * grid.columns + GridX;
+		index = std::clamp(index, 0, (grid.columns * grid.rows)-1);
+		grid.cells[index].addBall(i);
+	}
+
+	void solveCollision()
+	{
+		const uint32_t thread_count = thread_pool.m_thread_count;
+		const uint32_t slice_count = thread_count * 2;
+		const uint32_t slice_size = (grid.columns / slice_count) * grid.rows;
+		const uint32_t last_cell = (2 * (thread_count - 1) + 2) * slice_size;
+
+		for (uint32_t i{ 0 }; i < thread_count; ++i) {
+			thread_pool.addTask([this, i, slice_size] 
+			{
+				uint32_t const start{ 2 * i * slice_size };
+				uint32_t const end{ start + slice_size };
+				for (uint32_t i{ start }; i < end; ++i) {
+					ProcessCell(grid.cells[i]);
+				}
+			});
+		}
+		if (last_cell < grid.cells.size()) {
+			thread_pool.addTask([this, last_cell] 
+			{
+				uint32_t const end = static_cast<uint32_t>(grid.cells.size());
+				for (uint32_t i{ last_cell }; i < end; ++i) 
+				{
+					ProcessCell(grid.cells[i]);
+				}
+			});
+		}
+		thread_pool.waitForCompletion();
+		for (uint32_t i{ 0 }; i < thread_count; ++i) {
+			thread_pool.addTask([this, i, slice_size] 
+			{
+				uint32_t const start{ (2 * i + 1) * slice_size };
+				uint32_t const end{ start + slice_size };
+				for (uint32_t i{ start }; i < end; ++i) 
+				{
+					ProcessCell(grid.cells[i]);
+				}
+			});
+		}
+		thread_pool.waitForCompletion();
+	}
+
+	void ProcessCell(const CollisionCell& c)
+	{
+		for (int i = 0; i < c.ball_count; i++)
+		{
+			const int index = c.ballIndexes[i];
+			for (int j = 0; j < c.maxNeighbors; j++)
+			{
+				checkCells(index, c.neighbors[j]);
+			}
+		}
+	}
+
+	void checkCells(const int index, const int cellNeighborIndex)
+	{
+		CollisionCell& cell = grid.cells[cellNeighborIndex];
+		for (int i = 0; i < cell.ball_count; i++)
+		{
+			collision(index, cell.ballIndexes[i]);
+		}
+	}
+
+	void collision(const int index, const int jndex)
+	{
+		if (index == jndex)
+		{
+			return;
+		}
+		VerletBall& ball = balls[index];
+		VerletBall& OtherBall = balls[jndex];
+		const float bothrad = ball.radius + OtherBall.radius;
+
+		if (std::abs(ball.position.x - OtherBall.position.x) > (bothrad) ||
+			std::abs(ball.position.y - OtherBall.position.y) > (bothrad))
+		{
+			return;
+		}
+		const sf::Vector2<double> distVect = ball.position - OtherBall.position;
+		const double distsquared = Math::magnitude_squared(distVect);
+		const double distance = std::sqrt(distsquared);
+
+		if ((distance) < (bothrad))
+		{
+			const double nx = distVect.x / distance;
+			const double ny = distVect.y / distance;
+			const double massfactorOtherBall = (2 * ball.Mass) / (ball.Mass + OtherBall.Mass);
+			const double massfactorBall = (2 * OtherBall.Mass) / (ball.Mass + OtherBall.Mass);
+
+			ball.position.x += nx * (bothrad - (distance)) * 0.5;
+			OtherBall.position.x -= nx * (bothrad - (distance)) * 0.5;
+
+			ball.position.y += ny * (bothrad - (distance)) * 0.5;
+			OtherBall.position.y -= ny * (bothrad - (distance)) * 0.5;
+
+			const sf::Vector2<double> ivel = ball.displacement;
+			const sf::Vector2<double> jvel = OtherBall.displacement;
+			const float dotProduct = Math::dot((ivel - jvel), distVect);
+			ball.displacement = ivel - distVect * (Math::dot((ivel - jvel), distVect) / (distsquared)) * collisionrestitution;
+			OtherBall.displacement = jvel - distVect * (Math::dot((jvel - ivel), distVect) / (distsquared)) * collisionrestitution;
+			OtherBall.position_last = OtherBall.position - (massfactorOtherBall * OtherBall.displacement);
+			ball.position_last = ball.position - (massfactorBall * ball.displacement);
+		}
+	}
+
+	void constrain(VerletBall& ball)
+	{
+		if (ball.position.x > constraints.x - ball.radius || ball.position.x < ball.radius)
+		{
+			ball.position.x = std::clamp(ball.position.x, static_cast<double>(ball.radius), static_cast<double>(constraints.x - ball.radius));
+			ball.position_last.x = ball.position.x + (ball.displacement.x * restitution);
+		}
+
+		if (ball.position.y > constraints.y - ball.radius || ball.position.y < ball.radius)
+		{
+			ball.position.y = std::clamp(ball.position.y, static_cast<double>(ball.radius), static_cast<double>(constraints.y - ball.radius));
+			ball.position_last.y = ball.position.y + (ball.displacement.y * restitution);
+		}
+	}
+
 	void misc(VerletBall& ball)
 	{
-		const float energymodifier = 5;
-
 		double velocity = Math::magnitude_squared(ball.displacement);
 		ball.Energy = ((velocity) / ((2.0))) * substep * substep;
 
 		if (ThermalColors)
 		{
+			const float energymodifier = 5;
 			int scaledEnergy = static_cast<int>((ball.Energy / (energymodifier)) * 255);
 			scaledEnergy = std::min(255, std::max(0, scaledEnergy));
 
@@ -181,100 +340,30 @@ public:
 			});
 	}
 
-private:
-	void addGrid(const uint32_t i)
+	void updateObjects_multi(const double dt, const double gravity)
 	{
-		VerletBall& me = balls[i];
-		int GridX = me.position.x / (2 * radius) + 1;
-		int GridY = me.position.y / (2 * radius) + 1;
-		int index = GridY * grid.columns + GridX;
-		index = std::clamp(index, 0, (grid.columns * grid.rows)-1);
-		grid.cells[index].addBall(i);
-	}
-
-	void solveCollision(const uint32_t i)
-	{
-		if (grid.cells[i].ball_count == 0)
-		{
-			return;
-		}
-		ProcessCell(grid.cells[i]);
-	}
-
-	void ProcessCell(const CollisionCell& c)
-	{
-		for (int i = 0; i < c.ball_count; i++)
-		{
-			const int index = c.ballIndexes[i];
-			for (int j = 0; j < c.maxNeighbors; j++)
-			{
-				checkCells(index, c.neighbors[j]);
+		thread_pool.dispatch(static_cast<uint32_t>(grid.cells.size()), [&](uint32_t start, uint32_t end) {
+			for (uint32_t i{ start }; i < end; ++i) {
+				grid.cells[i].ball_count = 0;
 			}
-		}
-	}
+			});
 
-	void checkCells(const int index, const int cellNeighborIndex)
-	{
-		CollisionCell& cell = grid.cells[cellNeighborIndex];
-		for (int i = 0; i < cell.ball_count; i++)
-		{
-			collision(index, cell.ballIndexes[i]);
-		}
-	}
+		thread_pool.dispatch(static_cast<uint32_t>(balls.size()), [&](uint32_t start, uint32_t end) {
+			for (uint32_t i{ start }; i < end; ++i) {
+				VerletBall& ball = balls[i];
+				ball.update(dt, gravity);
+				addGrid(ball, i);
+			}
+			});
 
-	void collision(const int index, const int jndex)
-	{
-		if (index == jndex)
-		{
-			return;
-		}
-		VerletBall& ball = balls[index];
-		VerletBall& OtherBall = balls[jndex];
-		float bothrad = ball.radius + OtherBall.radius;
-		if (std::abs(ball.position.x - OtherBall.position.x) > (bothrad) ||
-			std::abs(ball.position.y - OtherBall.position.y) > (bothrad))
-		{
-			return;
-		}
-		const sf::Vector2<double> distVect = ball.position - OtherBall.position;
-		const double distsquared = Math::magnitude_squared(distVect);
-		const double distance = std::sqrt(distsquared);
-		const double nx = distVect.x / distance;
-		const double ny = distVect.y / distance;
-		const double massfactorOtherBall = (2 * ball.Mass) / (ball.Mass + OtherBall.Mass);
-		const double massfactorBall = (2 * OtherBall.Mass) / (ball.Mass + OtherBall.Mass);
+		solveCollision();
 
-
-		if ((distance) < (bothrad))
-		{
-			ball.position.x += nx * (bothrad - (distance)) * 0.5;
-			OtherBall.position.x -= nx * (bothrad - (distance)) * 0.5;
-
-			ball.position.y += ny * (bothrad - (distance)) * 0.5;
-			OtherBall.position.y -= ny * (bothrad - (distance)) * 0.5;
-
-			const sf::Vector2<double> ivel = ball.displacement;
-			const sf::Vector2<double> jvel = OtherBall.displacement;
-			const float dotProduct = Math::dot((ivel - jvel), distVect);
-			ball.displacement = ivel - distVect * (Math::dot((ivel - jvel), distVect) / (distsquared)) * collisionrestitution;
-			OtherBall.displacement = jvel - distVect * (Math::dot((jvel - ivel), distVect) / (distsquared)) * collisionrestitution;
-			OtherBall.position_last = OtherBall.position - (massfactorOtherBall * OtherBall.displacement);
-			ball.position_last = ball.position - (massfactorBall * ball.displacement);
-		}
-	}
-
-	void constrain(VerletBall& ball)
-	{
-		if (ball.position.x > constraints.x - ball.radius || ball.position.x < ball.radius)
-		{
-			ball.position.x = std::clamp(ball.position.x, static_cast<double>(ball.radius), static_cast<double>(constraints.x - ball.radius));
-			ball.position_last.x = ball.position.x + (ball.displacement.x * restitution);
-		}
-
-		if (ball.position.y > constraints.y - ball.radius || ball.position.y < ball.radius)
-		{
-			ball.position.y = std::clamp(ball.position.y, static_cast<double>(ball.radius), static_cast<double>(constraints.y - ball.radius));
-			ball.position_last.y = ball.position.y + (ball.displacement.y * restitution);
-		}
+		thread_pool.dispatch(static_cast<uint32_t>(balls.size()), [&](uint32_t start, uint32_t end) {
+			for (uint32_t i{ start }; i < end; ++i) {
+				VerletBall& ball = balls[i];
+				constrain(ball);
+				misc(ball);
+			}
+			});
 	}
 };

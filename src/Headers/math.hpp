@@ -9,17 +9,17 @@ struct Math
 
     static double dot(sf::Vector2<double> v1, sf::Vector2<double> v2)
     {
-        return { v1.x * v2.x + v1.y * v2.y };
+        return ( v1.x * v2.x + v1.y * v2.y );
     }
 
     static double magnitude_squared(sf::Vector2<double> v1)
     {
-        return { v1.x * v1.x + v1.y * v1.y };
+        return ( v1.x * v1.x + v1.y * v1.y );
     }
 
     static double magnitude(sf::Vector2<double> v1)
     {
-        return { std::sqrt(magnitude_squared(v1))};
+        return ( std::sqrt(magnitude_squared(v1)));
     }
 
     float arctan2(sf::Vector2<double> origin, sf::Vector2<double> end)

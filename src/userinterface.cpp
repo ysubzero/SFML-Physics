@@ -4,6 +4,11 @@
 #include <Headers/configuration.hpp>
 #include <SFML/Graphics.hpp>
 #include <thread>
+#include <algorithm>
+#include <memory>
+#include <fstream>
+#include <iostream>
+
 
 class GUI
 {
@@ -17,44 +22,152 @@ private:
     float constraintx = 1920;
     float constrainty = 1080;
 
+    uint32_t resolutionx = 1920;
+    uint32_t resolutiony = 1080;
+    uint32_t resolutionstep = 100;
+
     double mod = 2.5;
     double restitution = 1;
-    double startingvel = 50000;
+    double startingvel = 1;
     double timescale = 1;
+    
+    double gravity = 9.8;
 
     uint32_t threadpoolsize = 1;
     uint32_t numThreads = std::thread::hardware_concurrency();
     uint32_t step = 1;
 
     bool ThermalColors = true;
+    bool fullscreen = false;
+
+    friend std::istream& operator >> (std::istream& in, GUI& gui) {
+        in >> gui.count
+            >> gui.row_size
+            >> gui.substeps
+            >> gui.max_framerate
+            >> gui.radius
+            >> gui.constraintx
+            >> gui.constrainty
+            >> gui.resolutionx
+            >> gui.resolutiony
+            >> gui.resolutionstep
+            >> gui.mod
+            >> gui.restitution
+            >> gui.startingvel
+            >> gui.timescale
+            >> gui.gravity
+            >> gui.threadpoolsize
+            >> gui.numThreads
+            >> gui.step
+            >> gui.ThermalColors
+            >> gui.fullscreen;
+        return in;
+    }
+
+    friend std::ostream& operator << (std::ostream& out, const GUI& gui) {
+        out << gui.count << " "
+            << gui.row_size << " "
+            << gui.substeps << " "
+            << gui.max_framerate << " "
+            << gui.radius << " "
+            << gui.constraintx << " "
+            << gui.constrainty << " "
+            << gui.resolutionx << " "
+            << gui.resolutiony << " "
+            << gui.resolutionstep << " "
+            << gui.mod << " "
+            << gui.restitution << " "
+            << gui.startingvel << " "
+            << gui.timescale << " "
+            << gui.gravity << " "
+            << gui.threadpoolsize << " "
+            << gui.numThreads << " "
+            << gui.step << " "
+            << gui.ThermalColors << " "
+            << gui.fullscreen;
+        return out;
+    }
+
+    void load()
+    {
+        std::ifstream inFile("save.txt");
+
+        if (!inFile) {
+            return;
+        }
+
+        inFile >> *this;
+
+        if (inFile.fail()) {
+            inFile.close();
+            return;
+        }
+
+        inFile.close();
+    }
+
+    void save()
+    {
+        std::ofstream outFile("save.txt");
+
+        if (!outFile)
+        {
+            return;
+        }
+
+        outFile << *this;
+
+        if (outFile.fail())
+        {
+            outFile.close();
+            return;
+        }
+
+        outFile.close();
+    }
 
     void SetTheme()
     {
         ImGuiIO& io = ImGui::GetIO();
         ImFont* font = io.Fonts->AddFontFromFileTTF("files\\Consolas.ttf", 24);
-        ImGui::SFML::UpdateFontTexture();
+        (void)ImGui::SFML::UpdateFontTexture();
 
         ImGuiStyle& style = ImGui::GetStyle();
         ImVec4* colors = style.Colors;
-        colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-        colors[ImGuiCol_WindowBg] = ImVec4(0.10f, 0.10f, 0.10f, 1.00f);
-        colors[ImGuiCol_Header] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
-        colors[ImGuiCol_HeaderHovered] = ImVec4(0.30f, 0.30f, 0.30f, 1.00f);
-        colors[ImGuiCol_HeaderActive] = ImVec4(0.40f, 0.40f, 0.40f, 1.00f);
-        colors[ImGuiCol_Button] = ImVec4(0.15f, 0.15f, 0.15f, 1.00f);
-        colors[ImGuiCol_ButtonHovered] = ImVec4(0.25f, 0.25f, 0.25f, 1.00f);
-        colors[ImGuiCol_ButtonActive] = ImVec4(0.35f, 0.35f, 0.35f, 1.00f);
-        colors[ImGuiCol_FrameBg] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
-        colors[ImGuiCol_FrameBgHovered] = ImVec4(0.30f, 0.30f, 0.30f, 1.00f);
-        colors[ImGuiCol_FrameBgActive] = ImVec4(0.40f, 0.40f, 0.40f, 1.00f);
 
-        style.WindowRounding = 5.0f;
-        style.FrameRounding = 3.0f;
-        style.GrabRounding = 2.0f;
+        colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+        colors[ImGuiCol_WindowBg] = ImVec4(0.20f, 0.20f, 0.20f, 0.70f);
+        colors[ImGuiCol_Header] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+        colors[ImGuiCol_HeaderHovered] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+        colors[ImGuiCol_HeaderActive] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+        colors[ImGuiCol_Button] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+        colors[ImGuiCol_ButtonHovered] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
+        colors[ImGuiCol_ButtonActive] = ImVec4(0.40f, 0.40f, 0.40f, 1.00f);
+        colors[ImGuiCol_FrameBg] = ImVec4(0.30f, 0.30f, 0.30f, 1.00f);
+        colors[ImGuiCol_FrameBgHovered] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+        colors[ImGuiCol_FrameBgActive] = ImVec4(0.30f, 0.30f, 0.30f, 1.00f);
+        colors[ImGuiCol_ScrollbarBg] = ImVec4(0.30f, 0.30f, 0.30f, 1.00f);
+        colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+        colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
+        colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.40f, 0.40f, 0.40f, 1.00f);
+        style.Colors[ImGuiCol_Border] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+        style.Colors[ImGuiCol_BorderShadow] = ImVec4(0.50f, 0.50f, 0.50f, 0.00f);
+        style.Colors[ImGuiCol_TitleBg] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+        style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+        style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+        style.Colors[ImGuiCol_CheckMark] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+        style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+        style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
+        style.Colors[ImGuiCol_Separator] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+        style.Colors[ImGuiCol_SeparatorHovered] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
+        style.Colors[ImGuiCol_SeparatorActive] = ImVec4(0.40f, 0.40f, 0.40f, 1.00f);
+
+        style.WindowRounding = 0.0f;
+        style.FrameRounding = 0.0f;
+        style.GrabRounding = 0.0f;
     }
 
 public:
-
 
     void Start()
     {
@@ -63,7 +176,7 @@ public:
         sf::RenderWindow window(sf::VideoMode(conf::gui_size.x, conf::gui_size.y), "SFML Physics Project Initializer", sf::Style::Titlebar | sf::Style::Close);
         window.setFramerateLimit(conf::max_framerate);
 
-        ImGui::SFML::Init(window, false);
+        (void)ImGui::SFML::Init(window, false);
 
         SetTheme();
 
@@ -85,10 +198,12 @@ public:
 
             ImGui::Begin("SFML Verlet Physics", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
+            ImGui::Separator();
+
             if (ImGui::CollapsingHeader("Ball Settings", ImGuiTreeNodeFlags_DefaultOpen))
             {
                 ImGui::InputInt("Balls", &count, 100, 1000);
-                count = std::clamp(count, 1, 2000000);
+                count = std::clamp(count, 1, 5000000);
 
                 ImGui::InputFloat("Radius", &radius, 1.0f, 10.0f);
                 radius = std::clamp(radius, 0.5f, 1000.0f);
@@ -101,6 +216,8 @@ public:
 
                 ImGui::Checkbox("Thermal Colors", &ThermalColors);
             }
+
+            ImGui::Separator();
 
             if (ImGui::CollapsingHeader("Simulation Settings", ImGuiTreeNodeFlags_DefaultOpen))
             {
@@ -116,8 +233,8 @@ public:
                 ImGui::InputInt("Substeps", &substeps, 1, 10);
                 substeps = std::clamp(substeps, 1, 100);
 
-                ImGui::InputDouble("Starting Velocity", &startingvel, 1000, 10000);
-                startingvel = std::clamp(startingvel, 0.0, 500000.0);
+                ImGui::InputDouble("Starting Velocity", &startingvel, 0.25, 2);
+                startingvel = std::clamp(startingvel, 0.0, 20.0);
 
                 ImGui::InputDouble("Restitution", &restitution, 0.01, 0.2);
                 restitution = std::clamp(restitution, 0.0, 1.0);
@@ -125,17 +242,56 @@ public:
                 ImGui::InputDouble("Timescale", &timescale, 0.2, 1);
                 timescale = std::clamp(timescale, 0.01, 10.0);
 
+                ImGui::InputDouble("Gravity", &gravity, 50, 200);
+                gravity = std::clamp(gravity, -275.0, 275.0);
+
                 ImGui::InputScalar("Threadpool Size", ImGuiDataType_U32, &threadpoolsize, &step, &step);
                 threadpoolsize = std::clamp(threadpoolsize, 1u, numThreads);
             }
 
+            ImGui::Separator();
+
+            if (ImGui::CollapsingHeader("Window Settings", ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                ImGui::Checkbox("Fullscreen", &fullscreen);
+
+                ImGui::InputScalar("Resolution X", ImGuiDataType_U32, &resolutionx, &resolutionstep, &resolutionstep);
+                resolutionx = std::clamp(resolutionx, 600u, 3840u);
+
+                ImGui::InputScalar("Resolution Y", ImGuiDataType_U32, &resolutiony, &resolutionstep, &resolutionstep);
+                resolutiony = std::clamp(resolutiony, 400u, 2160u);
+            }
+
+            ImGui::Separator();
+
+            if (ImGui::CollapsingHeader("Saves"))
+            {
+                if (ImGui::Button("Load Settings"))
+                {
+                    load();
+                }
+
+                if (ImGui::Button("Save Settings"))
+                {
+                    save();
+                }
+            }
+
+            ImGui::Separator();
+
             if (ImGui::Button("Start Simulation") && !isRunning)
             {
                 isRunning = true;
-                Simulation* sim = new Simulation(count, row_size, substeps, max_framerate, radius, constraintx, constrainty, mod, restitution, startingvel, (1.0/static_cast<double>(max_framerate)) * timescale, ThermalColors, threadpoolsize);
-                sim->Solution();
+                {
+                    auto sim = std::make_unique<Simulation>(
+                        count, row_size, substeps, max_framerate, radius,
+                        constraintx, constrainty, mod, restitution,
+                        startingvel, (1.0 / static_cast<double>(max_framerate)) * timescale,
+                        ThermalColors, threadpoolsize, gravity * 10, fullscreen, resolutionx, resolutiony
+                    );
+                    sim->Solution();
+                }
                 isRunning = false;
-                delete sim;
             }
             ImGui::End();
 
