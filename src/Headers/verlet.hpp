@@ -23,7 +23,7 @@ struct VerletBall
 		position_last(0.0, 0.0),
 		displacement(position - position_last),
 		acceleration(0.0, 0.0),
-		Mass(1),
+		Mass(0.01),
 		Energy(0),
 		radius(1.0f),
 		color(sf::Color::White)
@@ -36,7 +36,6 @@ struct VerletBall
 
 		position_last = position;
 		position = position_next;
-		acceleration = sf::Vector2<double>(0.0, gravity);
 	}
 
 };

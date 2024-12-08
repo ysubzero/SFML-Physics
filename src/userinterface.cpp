@@ -16,14 +16,14 @@
 class GUI
 {
 private:
-    int count = 100000;
+    int count = 100;
     int row_size = 600;
     int substeps = 1;
     int max_framerate = 170;
 
-    float radius = 1;
-    float constraintx = 1920;
-    float constrainty = 1080;
+    float radius = 300;
+    float constraintx = 100000;
+    float constrainty = 100000;
 
     uint32_t resolutionx = 1920;
     uint32_t resolutiony = 1080;
@@ -31,7 +31,7 @@ private:
 
     double mod = 2.5;
     double restitution = 1;
-    double startingvel = 1;
+    double startingvel = 100;
     double timescale = 1;
     
     double gravity = 9.8;
@@ -209,7 +209,7 @@ public:
                 count = std::clamp(count, 1, 5000000);
 
                 ImGui::InputFloat("Radius", &radius, 1.0f, 10.0f);
-                radius = std::clamp(radius, 0.5f, 1000.0f);
+                radius = std::clamp(radius, 0.5f, 10000.0f);
 
                 ImGui::InputInt("Row Size", &row_size, 50, 100);
                 row_size = std::clamp(row_size, 1, 2000);
@@ -225,10 +225,10 @@ public:
             if (ImGui::CollapsingHeader("Simulation Settings", ImGuiTreeNodeFlags_DefaultOpen))
             {
                 ImGui::InputFloat("Constraint X", &constraintx, 100.0f, 200.0f);
-                constraintx = std::clamp(constraintx, 100.0f, 5000.0f);
+                constraintx = std::clamp(constraintx, 100.0f, 2000000.0f);
 
                 ImGui::InputFloat("Constraint Y", &constrainty, 1.0f, 10.0f);
-                constrainty = std::clamp(constrainty, 100.0f, 5000.0f);
+                constrainty = std::clamp(constrainty, 100.0f, 2000000.0f);
 
                 ImGui::InputInt("Max Framerate", &max_framerate, 10, 50);
                 max_framerate = std::clamp(max_framerate, 10, 9999);
@@ -237,13 +237,13 @@ public:
                 substeps = std::clamp(substeps, 1, 100);
 
                 ImGui::InputDouble("Starting Velocity", &startingvel, 0.25, 2);
-                startingvel = std::clamp(startingvel, 0.0, 20.0);
+                startingvel = std::clamp(startingvel, 0.0, 100000.0);
 
                 ImGui::InputDouble("Restitution", &restitution, 0.01, 0.2);
                 restitution = std::clamp(restitution, 0.0, 1.0);
 
                 ImGui::InputDouble("Timescale", &timescale, 0.2, 1);
-                timescale = std::clamp(timescale, 0.01, 10.0);
+                timescale = std::clamp(timescale, 0.01, 1000.0);
 
                 ImGui::InputDouble("Gravity", &gravity, 50, 200);
                 gravity = std::clamp(gravity, -275.0, 275.0);

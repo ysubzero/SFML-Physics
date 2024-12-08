@@ -6,6 +6,7 @@ struct Math
 {
     static constexpr double PI = 3.14159;
     static constexpr double gravity = 98;
+    static constexpr double grav_const = 1.0;
 
     static double dot(sf::Vector2<double> v1, sf::Vector2<double> v2)
     {

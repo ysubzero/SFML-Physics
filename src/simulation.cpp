@@ -71,22 +71,22 @@ private:
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) 
         {
-            zoomFactor += 0.02;
+            zoomFactor += 0.10 * (constraints.x/1920);
         }
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down) && zoomFactor > 0.01f) {
-            zoomFactor -= 0.02;
+            zoomFactor -= 0.10 * (constraints.x / 1920);
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::W) && constraints.y / 2 + deltaY > 0) {
-            deltaY -= 10;
+            deltaY -= constraints.x / 300;
         }
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S) && constraints.y / 2 + deltaY < constraints.y) {
-            deltaY += 10;
+            deltaY += constraints.x / 300;
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::A) && constraints.x / 2 + deltaX > 0) {
-            deltaX -= 10;
+            deltaX -= constraints.x / 300;
         }
         else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) && constraints.x / 2 + deltaX < constraints.x) {
-            deltaX += 10;
+            deltaX += constraints.x / 300;
         }
         view.setSize(resolutionx * zoomFactor, resolutiony * zoomFactor);
         view.setCenter(resolutionx / 2 + deltaX, resolutiony / 2 + deltaY);
