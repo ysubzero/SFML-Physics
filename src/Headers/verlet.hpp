@@ -32,7 +32,7 @@ struct VerletBall
 	void update(const double dt, const double gravity)
 	{
 		displacement = position - position_last;
-		position_next = position + displacement + acceleration * dt * dt;
+		position_next = position + displacement + acceleration * dt * dt; //verlet
 
 		position_last = position;
 		position = position_next;

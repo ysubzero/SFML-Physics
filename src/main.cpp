@@ -3,6 +3,6 @@
 int main()
 {
     GUI gui;
-    gui.Start();
+    gui.Start(); //greatest main.cpp ever.
 }
 

@@ -86,7 +86,6 @@ public:
 		thread_pool.dispatch(static_cast<uint32_t>(balls.size()), [&](uint32_t start, uint32_t end) {
 			for (uint32_t i{ start }; i < end; ++i) {
 				VerletBall& ball = balls[i];
-				ball.radius = radius;
 				ball.position = sf::Vector2<double>(radius * mod * (i % rowsize) + std::min((6 * radius + 1.0), 100.0), radius * mod * (i / rowsize) + std::min((6 * radius + 1.0), 100.0));
 				ball.position_last = sf::Vector2<double>(ball.position.x + (dis(gen) / 3.0), ball.position.y + (dis(gen) / 3.0));
 				if (!ThermalColors)
@@ -128,9 +127,9 @@ public:
 		}
 		for (int j = 0; j < grid.cells[index].maxNeighbors; ++j)
 		{
-			for (int k = 0; k < grid.cells[grid.cells[index].neighbors[j]].ball_count; ++k)
+			for (int k = 0; k < grid.cells[grid.cells[index].neighbors[j]].ball_count; ++k) // W code
 			{
-				VerletBall& ball = balls[grid.cells[grid.cells[index].neighbors[j]].ballIndexes[k]];
+				VerletBall& ball = balls[grid.cells[grid.cells[index].neighbors[j]].ballIndexes[k]]; // W code
 				const sf::Vector2<double> direction = sf::Vector2<double>(pos.x, pos.y) - ball.position;
 				const double dist = Math::magnitude(direction);
 				ball.position_last -= sf::Vector2<double>(direction.x * -(0.12 - dist/radius), direction.y * -(0.12 - dist/radius));
@@ -246,7 +245,7 @@ private:
 		}
 		VerletBall& ball = balls[index];
 		VerletBall& OtherBall = balls[jndex];
-		const float bothrad = ball.radius + OtherBall.radius;
+		const float bothrad = radius + radius;
 
 		if (std::abs(ball.position.x - OtherBall.position.x) > (bothrad) ||
 			std::abs(ball.position.y - OtherBall.position.y) > (bothrad))
@@ -259,8 +258,8 @@ private:
 
 		if ((distance) < (bothrad))
 		{
-			const double nx = distVect.x / distance;
-			const double ny = distVect.y / distance;
+			const double nx = distVect.x / distance; //normalizedx 
+			const double ny = distVect.y / distance; //normalizedy
 			const double massfactorOtherBall = (2 * ball.Mass) / (ball.Mass + OtherBall.Mass);
 			const double massfactorBall = (2 * OtherBall.Mass) / (ball.Mass + OtherBall.Mass);
 
@@ -273,8 +272,8 @@ private:
 			const sf::Vector2<double> ivel = ball.displacement;
 			const sf::Vector2<double> jvel = OtherBall.displacement;
 			const float dotProduct = Math::dot((ivel - jvel), distVect);
-			ball.displacement = ivel - distVect * (Math::dot((ivel - jvel), distVect) / (distsquared)) * collisionrestitution;
-			OtherBall.displacement = jvel - distVect * (Math::dot((jvel - ivel), distVect) / (distsquared)) * collisionrestitution;
+			ball.displacement = ivel - distVect * (Math::dot((ivel - jvel), distVect) / (distsquared)) * collisionrestitution; //MATH!
+			OtherBall.displacement = jvel - distVect * (Math::dot((jvel - ivel), distVect) / (distsquared)) * collisionrestitution; //MATH!
 			OtherBall.position_last = OtherBall.position - (massfactorOtherBall * OtherBall.displacement);
 			ball.position_last = ball.position - (massfactorBall * ball.displacement);
 		}
@@ -282,15 +281,15 @@ private:
 
 	void constrain(VerletBall& ball)
 	{
-		if (ball.position.x > constraints.x - ball.radius || ball.position.x < ball.radius)
+		if (ball.position.x > constraints.x - radius || ball.position.x < radius)
 		{
-			ball.position.x = std::clamp(ball.position.x, static_cast<double>(ball.radius), static_cast<double>(constraints.x - ball.radius));
+			ball.position.x = std::clamp(ball.position.x, static_cast<double>(radius), static_cast<double>(constraints.x - radius));
 			ball.position_last.x = ball.position.x + (ball.displacement.x * restitution);
 		}
 
-		if (ball.position.y > constraints.y - ball.radius || ball.position.y < ball.radius)
+		if (ball.position.y > constraints.y - radius || ball.position.y < radius)
 		{
-			ball.position.y = std::clamp(ball.position.y, static_cast<double>(ball.radius), static_cast<double>(constraints.y - ball.radius));
+			ball.position.y = std::clamp(ball.position.y, static_cast<double>(radius), static_cast<double>(constraints.y - radius));
 			ball.position_last.y = ball.position.y + (ball.displacement.y * restitution);
 		}
 	}
@@ -328,7 +327,7 @@ private:
 				vertices[index + 1].position = sf::Vector2f{ static_cast<float>(radius + ball.position.x), static_cast<float>(-radius + ball.position.y) };
 				vertices[index + 2].position = sf::Vector2f{ static_cast<float>(radius + ball.position.x), static_cast<float>(radius + ball.position.y) };
 				vertices[index + 3].position = sf::Vector2f{ static_cast<float>(-radius + ball.position.x), static_cast<float>(radius + ball.position.y) };
-				vertices[index + 0].texCoords = { 0.0f        , 0.0f };
+				vertices[index + 0].texCoords = { 0.0f, 0.0f };
 				vertices[index + 1].texCoords = { textsize, 0.0f };
 				vertices[index + 2].texCoords = { textsize, textsize };
 				vertices[index + 3].texCoords = { 0.0f, textsize };

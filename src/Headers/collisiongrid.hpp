@@ -5,14 +5,14 @@
 
 struct CollisionCell 
 {
-	static const int capacity = 4;
+	static const int capacity = 4; //i think this the most mathematically efficient way to pack circles, may be wrong
 	static const int maxIndex = 3;
-	static const int neighborCount = 9;
+	static const int neighborCount = 9; 
 
 	int ball_count = 0;
 	int maxNeighbors = 8;
 	std::array<int, capacity> ballIndexes = {};
-	std::array<int, neighborCount> neighbors = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+	std::array<int, neighborCount> neighbors = {0, 0, 0, 0, 0, 0, 0, 0, 0}; //i didnt want to copy paste neighbor processing
 
 	CollisionCell() = default;
 
@@ -33,7 +33,7 @@ struct CollisionCell
 
 struct CollisionGrid
 {
-	int columns, rows;
+	const int columns, rows;
 	std::vector<CollisionCell> cells;
 	
 	CollisionGrid()
@@ -48,7 +48,7 @@ struct CollisionGrid
 		cells.resize(columns * rows);
 	}
 
-	void InitializeNeighbors()
+	void InitializeNeighbors() // lol
 	{
 		for (int i = 0; i < columns * rows; i++)
 		{
