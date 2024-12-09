@@ -63,7 +63,7 @@ private:
             solver.AddBall(globalpos);
             count.setString(std::to_string(solver.count) + " Balls");
         }
-        if (sf::Mouse::isButtonPressed(sf::Mouse::Middle))
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
         {
             sf::Vector2i mousepos = sf::Mouse::getPosition(window);
             sf::Vector2f globalpos = window.mapPixelToCoords(mousepos, window.getView());
