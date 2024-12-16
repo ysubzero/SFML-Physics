@@ -132,7 +132,7 @@ public:
 				VerletBall& ball = balls[grid.cells[grid.cells[index].neighbors[j]].ballIndexes[k]]; // W code
 				const sf::Vector2<double> direction = sf::Vector2<double>(pos.x, pos.y) - ball.position;
 				const double dist = Math::magnitude(direction);
-				ball.position_last -= sf::Vector2<double>(direction.x * -(0.12 - dist/radius), direction.y * -(0.12 - dist/radius));
+				ball.position_last -= sf::Vector2<double>(direction.x * -(0.12 - dist/radius * (1 / substep)), direction.y * -(0.12 - dist/radius * (1 / substep)));
 			}
 		}
 	}
@@ -279,7 +279,7 @@ private:
 		}
 	}
 
-	void constrain(VerletBall& ball)
+	const void constrain(VerletBall& ball)
 	{
 		if (ball.position.x > constraints.x - radius || ball.position.x < radius)
 		{
@@ -294,7 +294,7 @@ private:
 		}
 	}
 
-	void misc(VerletBall& ball)
+	const void misc(VerletBall& ball)
 	{
 		double velocity = Math::magnitude_squared(ball.displacement);
 		ball.Energy = ((velocity) / ((2.0))) * substep * substep;

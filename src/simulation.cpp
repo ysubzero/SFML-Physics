@@ -56,12 +56,14 @@ private:
 
     void checkinput(sf::RenderWindow& window, Solver& solver, float& zoomFactor, int& deltaY, int& deltaX, sf::View& view, sf::Text& count)
     {
-        if (sf::Mouse::isButtonPressed(sf::Mouse::Right)) 
+        static int stopinfiniteball = 0;
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Right) && stopinfiniteball > 2) 
         {
             sf::Vector2i mousepos = sf::Mouse::getPosition(window);
             sf::Vector2f globalpos = window.mapPixelToCoords(mousepos, window.getView());
             solver.AddBall(globalpos);
             count.setString(std::to_string(solver.count) + " Balls");
+            stopinfiniteball = 0;
         }
         if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
         {
@@ -90,6 +92,7 @@ private:
         }
         view.setSize(resolutionx * zoomFactor, resolutiony * zoomFactor);
         view.setCenter(resolutionx / 2 + deltaX, resolutiony / 2 + deltaY);
+        stopinfiniteball++;
     }
 
 
