@@ -108,7 +108,7 @@ public:
 		count++;
 	}
 
-	void mouse(const sf::Vector2f pos, const double dt)
+	void mouse(const sf::Vector2f& pos, const double dt)
 	{
 		int GridX = pos.x / (2 * radius) + 1;
 		if (GridX < 0 || GridX >= grid.columns)
