@@ -32,13 +32,13 @@ private:
     const uint32_t resolutiony;
 
 
-    sf::Vector2f const constraints;
+    sf::Vector2<float> const constraints;
 
     double gravity;
 
-    void loadfiles(sf::Font& consolas, sf::Text& energy, sf::Text& deltatime, sf::Text& count, sf::Texture& texture)
+    void loadfiles(sf::Font& consolas, sf::Texture& texture)
     {
-        if (!consolas.loadFromFile("files\\Consolas.ttf"))
+        if (!consolas.openFromFile("files\\Consolas.ttf"))
         {
             std::cout << "Error\n";
         }
@@ -46,52 +46,46 @@ private:
         {
             std::cout << "Error\n";
         }
-
-        energy.setFont(consolas);
-        deltatime.setFont(consolas);
-        deltatime.setPosition(sf::Vector2f(0, 100));
-        count.setFont(consolas);
-        count.setPosition(sf::Vector2f(0, 200));
     }
 
     void checkinput(sf::RenderWindow& window, Solver& solver, float& zoomFactor, int& deltaY, int& deltaX, sf::View& view, sf::Text& count)
     {
         static int stopinfiniteball = 0;
-        if (sf::Mouse::isButtonPressed(sf::Mouse::Right) && stopinfiniteball > 2) 
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Right) && stopinfiniteball > 2) 
         {
             sf::Vector2i mousepos = sf::Mouse::getPosition(window);
-            sf::Vector2f globalpos = window.mapPixelToCoords(mousepos, window.getView());
+            sf::Vector2<float> globalpos = window.mapPixelToCoords(mousepos, window.getView());
             solver.AddBall(globalpos);
             count.setString(std::to_string(solver.count) + " Balls");
             stopinfiniteball = 0;
         }
-        if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left))
         {
             sf::Vector2i mousepos = sf::Mouse::getPosition(window);
-            sf::Vector2f globalpos = window.mapPixelToCoords(mousepos, window.getView());
+            sf::Vector2<float> globalpos = window.mapPixelToCoords(mousepos, window.getView());
             solver.mouse(globalpos, dt);
         }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) 
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::Up))
         {
             zoomFactor += 0.02;
         }
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down) && zoomFactor > 0.01f) {
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::Down) && zoomFactor > 0.01f) {
             zoomFactor -= 0.02;
         }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::W) && constraints.y / 2 + deltaY > 0) {
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::W) && constraints.y / 2 + deltaY > 0) {
             deltaY -= 10;
         }
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S) && constraints.y / 2 + deltaY < constraints.y) {
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::S) && constraints.y / 2 + deltaY < constraints.y) {
             deltaY += 10;
         }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::A) && constraints.x / 2 + deltaX > 0) {
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::A) && constraints.x / 2 + deltaX > 0) {
             deltaX -= 10;
         }
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) && constraints.x / 2 + deltaX < constraints.x) {
+        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::D) && constraints.x / 2 + deltaX < constraints.x) {
             deltaX += 10;
         }
-        view.setSize(resolutionx * zoomFactor, resolutiony * zoomFactor);
-        view.setCenter(resolutionx / 2 + deltaX, resolutiony / 2 + deltaY);
+        view.setSize(sf::Vector2<float>(resolutionx * zoomFactor, resolutiony * zoomFactor));
+        view.setCenter(sf::Vector2<float>(resolutionx / 2 + deltaX, resolutiony / 2 + deltaY));
         stopinfiniteball++;
     }
 
@@ -129,7 +123,7 @@ public:
         mod(_mod),
         restitution(_restitution),
         startingvel(_startingvel),
-        constraints(sf::Vector2f(_constraintx, constrainty)),
+        constraints(sf::Vector2<float>(_constraintx, constrainty)),
         dt(_dt),
         ThermalColors(_ThermalColors),
         threadpoolsize(_threadpoolsize),
@@ -149,33 +143,38 @@ public:
 
         if (fullscreen)
         {
-            window.create(desktopMode, "SFML Verlet Integration", sf::Style::Fullscreen);
+            window.create(desktopMode, "SFML Verlet Integration", sf::State::Fullscreen);
         }
         else
         {
-            window.create(sf::VideoMode(resolutionx, resolutiony), "SFML Verlet Integration", sf::Style::Titlebar | sf::Style::Close);
+            window.create(sf::VideoMode({ resolutionx, resolutiony }), "SFML Verlet Integration", sf::Style::Titlebar | sf::Style::Close);
         }
 
         window.setFramerateLimit(max_framerate);
-        sf::View view(sf::FloatRect(0, 0, resolutionx, resolutiony));
-        view.setCenter(resolutionx / 2, resolutiony / 2);
+        sf::View view(sf::Rect<float>({ static_cast<float>(0), static_cast<float>(0) }, { static_cast<float>(resolutionx), static_cast<float>(resolutiony) }));
+        view.setCenter(sf::Vector2<float>(resolutionx / 2, resolutiony / 2));
         window.setView(view);
 
-        sf::VertexArray vertices(sf::Quads);
+        sf::VertexArray vertices(sf::PrimitiveType::Triangles);
 
         Solver solver(thread_pool, vertices, count, substeps, row_size, radius, restitution, startingvel, mod, constraints, ThermalColors);
 
         sf::Font consolas;
-        sf::Text energy;
-        sf::Text deltatime;
-        sf::Text count;
         sf::Clock clock;
         sf::Texture texture;
 
-        loadfiles(consolas, energy, deltatime, count, texture);
+        loadfiles(consolas, texture);
 
-        sf::RectangleShape blackBackground(sf::Vector2f(constraints.x, constraints.y));
-        blackBackground.setPosition(0, 0);
+        sf::Text energy(consolas);
+        sf::Text deltatime(consolas);
+        sf::Text count(consolas);
+
+        deltatime.setPosition(sf::Vector2<float>(0, 100));
+        count.setFont(consolas);
+        count.setPosition(sf::Vector2<float>(0, 200));
+
+        sf::RectangleShape blackBackground(sf::Vector2<float>(constraints.x, constraints.y));
+        blackBackground.setPosition(sf::Vector2<float>(0, 0));
         blackBackground.setFillColor(sf::Color(0, 0, 0));
 
         float zoomFactor = 1;
@@ -190,29 +189,32 @@ public:
         while (window.isOpen())
         {
 
-            for (auto event = sf::Event(); window.pollEvent(event);)
+            while (const std::optional event = window.pollEvent())
             {
-                if (event.type == sf::Event::Closed)
+                if (event->is<sf::Event::Closed>())
                 {
                     window.close();
                 }
-                if ((event.type == sf::Event::KeyReleased) && (event.key.code == sf::Keyboard::Escape))
+                else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
                 {
-                    if (isRunning)
+                    if (keyPressed->scancode == sf::Keyboard::Scancode::Escape)
                     {
-                        isRunning = false;
+                        if (isRunning)
+                        {
+                            isRunning = false;
+                        }
+                        else
+                        {
+                            isRunning = true;
+                        }
                     }
-                    else
+                    if (keyPressed->scancode == sf::Keyboard::Scancode::R)
                     {
-                        isRunning = true;
+                        view.setCenter(sf::Vector2<float>(resolutionx / 2, resolutiony / 2));
+                        zoomFactor = 1;
+                        deltaY = 0;
+                        deltaX = 0;
                     }
-                }
-                if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::R))
-                {
-                    view.setCenter(resolutionx / 2, resolutiony / 2);
-                    zoomFactor = 1;
-                    deltaY = 0;
-                    deltaX = 0;
                 }
             }
 

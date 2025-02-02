@@ -44,7 +44,7 @@ public:
 	const double mod;
 	double collisionrestitution;
 
-	sf::Vector2f const constraints;
+	sf::Vector2<float> const constraints;
 
 	double Total_energy = 0;
 	const bool ThermalColors;
@@ -60,7 +60,7 @@ public:
 		const double _restitution = 1.0,
 		const double _startingvel = 5.0,
 		const double _mod = 2.5,
-		sf::Vector2f const _constraints = sf::Vector2f(1920, 1080),
+		sf::Vector2<float> const _constraints = sf::Vector2<float>(1920, 1080),
 		const bool _ThermalColors = true
 	)
 		:
@@ -97,7 +97,7 @@ public:
 	}
 
 	//balls[0].color = sf::Color::Yellow;
-	void AddBall(const sf::Vector2f& Coords)
+	void AddBall(const sf::Vector2<float>& Coords)
 	{
 		VerletBall newBall;
 		newBall.position = sf::Vector2<double>(Coords.x, Coords.y);
@@ -108,7 +108,7 @@ public:
 		count++;
 	}
 
-	void mouse(const sf::Vector2f& pos, const double dt)
+	void mouse(const sf::Vector2<float>& pos, const double dt)
 	{
 		int GridX = pos.x / (2 * radius) + 1;
 		if (GridX < 0 || GridX >= grid.columns)
@@ -296,7 +296,7 @@ private:
 
 	const void misc(VerletBall& ball)
 	{
-		double velocity = Math::magnitude_squared(ball.displacement);
+		const double velocity = Math::magnitude_squared(ball.displacement);
 		ball.Energy = ((velocity) / ((2.0))) * substep * substep;
 
 		if (ThermalColors)
@@ -316,27 +316,38 @@ private:
 
 	void toVertexArraymulti()
 	{
-		vertices.resize(balls.size() * 4);
+		vertices.resize(balls.size() * 6);
 		const float textsize = 100;
 		thread_pool.dispatch(static_cast<uint32_t>(balls.size()), [&](uint32_t start, uint32_t end) {
 			for (uint32_t i{ start }; i < end; ++i)
 			{
 				const VerletBall& ball = balls[i];
-				const uint32_t index = i << 2;
-				vertices[index + 0].position = sf::Vector2f{ static_cast<float>(-radius + ball.position.x), static_cast<float>(-radius + ball.position.y) };
-				vertices[index + 1].position = sf::Vector2f{ static_cast<float>(radius + ball.position.x), static_cast<float>(-radius + ball.position.y) };
-				vertices[index + 2].position = sf::Vector2f{ static_cast<float>(radius + ball.position.x), static_cast<float>(radius + ball.position.y) };
-				vertices[index + 3].position = sf::Vector2f{ static_cast<float>(-radius + ball.position.x), static_cast<float>(radius + ball.position.y) };
+				const uint32_t index = (i << 2) + (i << 1);
+
+				vertices[index + 0].position = sf::Vector2<float>{ static_cast<float>(-radius + ball.position.x), static_cast<float>(-radius + ball.position.y) };
+				vertices[index + 1].position = sf::Vector2<float>{ static_cast<float>(radius + ball.position.x), static_cast<float>(-radius + ball.position.y) };
+				vertices[index + 2].position = sf::Vector2<float>{ static_cast<float>(-radius + ball.position.x), static_cast<float>(radius + ball.position.y) };
+
 				vertices[index + 0].texCoords = { 0.0f, 0.0f };
 				vertices[index + 1].texCoords = { textsize, 0.0f };
-				vertices[index + 2].texCoords = { textsize, textsize };
-				vertices[index + 3].texCoords = { 0.0f, textsize };
+				vertices[index + 2].texCoords = { 0.0f, textsize };
 
 				const sf::Color color = ball.color;
 				vertices[index + 0].color = color;
 				vertices[index + 1].color = color;
 				vertices[index + 2].color = color;
+
+				vertices[index + 3].position = sf::Vector2<float>{ static_cast<float>(radius + ball.position.x), static_cast<float>(radius + ball.position.y) };
+				vertices[index + 4].position = sf::Vector2<float>{ static_cast<float>(radius + ball.position.x), static_cast<float>(-radius + ball.position.y) };
+				vertices[index + 5].position = sf::Vector2<float>{ static_cast<float>(-radius + ball.position.x), static_cast<float>(radius + ball.position.y) };
+
+				vertices[index + 3].texCoords = { textsize, textsize };
+				vertices[index + 4].texCoords = { textsize, 0.0f };
+				vertices[index + 5].texCoords = { 0.0f, textsize };
+
 				vertices[index + 3].color = color;
+				vertices[index + 4].color = color;
+				vertices[index + 5].color = color;
 			}
 			});
 	}

@@ -176,7 +176,7 @@ public:
     {
         static bool isRunning = false;
 
-        sf::RenderWindow window(sf::VideoMode(conf::gui_size.x, conf::gui_size.y), "SFML Physics Project Initializer", sf::Style::Titlebar | sf::Style::Close);
+        sf::RenderWindow window(sf::VideoMode({ conf::gui_size.x, conf::gui_size.y }), "SFML Physics Project Initializer", sf::Style::Titlebar | sf::Style::Close);
         window.setFramerateLimit(conf::max_framerate);
 
         (void)ImGui::SFML::Init(window, false);
@@ -185,11 +185,12 @@ public:
 
         sf::Clock deltaClock;
         while (window.isOpen()) {
-            sf::Event event;
-            while (window.pollEvent(event)) {
-                ImGui::SFML::ProcessEvent(window, event);
+            while (const auto event = window.pollEvent())
+            {
+                ImGui::SFML::ProcessEvent(window, *event);
 
-                if (event.type == sf::Event::Closed) {
+                if (event->is<sf::Event::Closed>())
+                {
                     window.close();
                 }
             }
